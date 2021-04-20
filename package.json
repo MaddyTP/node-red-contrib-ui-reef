@@ -1,0 +1,31 @@
+{
+  "name": "red-contrib-ui-reef",
+  "version": "1.0.0",
+  "description": "Set of UI nodes for aquarium automation.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaddyTP/node-red-contrib-ui-reef.git"
+  },
+  "keywords": [
+    "node-red",
+    "reef",
+    "aquarium",
+    "ui"
+  ],
+  "author": "MaddyTP",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MaddyTP/node-red-contrib-ui-reef/issues"
+  },
+  "homepage": "https://github.com/MaddyTP/node-red-contrib-ui-reef#readme",
+  "node-red": {
+    "nodes": {
+      "probe": "probe.js",
+      "switch": "switch.js",
+      "outlet": "outlet.js"
+    }
+  },
+  "dependencies": {
+    "highcharts": "^9.0.1"
+  }
+}
