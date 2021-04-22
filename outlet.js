@@ -1,5 +1,5 @@
 /**
- * Copyright JS Foundation and other contributors, http://js.foundation
+ * Copyright 2021 Bart Butenaers & hotNipi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
  module.exports = function(RED) {
     "use strict";
-
+    var settings = RED.settings;
     var util = require("util");
     var vm = require("vm");
 
@@ -88,25 +88,150 @@
         }
     }
 
-    function FunctionNode(n) {
-        RED.nodes.createNode(this,n);
+    function HTML(config) { 
+        // Replace the dots in the id (by underscores), because we use it in element identifiers.
+        // And then dots are not allowed, because otherwise you cannot find the element by id!
+        config.id = config.id.replace(".", "_");
+        // Add a default rounding of 0em to older nodes (version 1.0.0)        
+        // The configuration is a Javascript object, which needs to be converted to a JSON string
+        var configAsJson = JSON.stringify(config);
+        var html = String.raw`
+        <style>
+            .multistate-switch-container{
+                display: block;
+                width:100%;
+                margin:auto;
+                padding: 3px;
+            }
+            .multistate-switch-header{
+                display: flex;
+	            justify-content: space-between;
+                font-size: 14px;
+                font-weight: 500;
+                letter-spacing: .1em;
+                text-transform: uppercase;
+                margin: 0.1em;
+                padding-left: 2px;
+                padding-right: 2px;
+            }
+            .multistate-switch-config{
+                color: #999;
+                cursor: pointer;
+            }
+            .multistate-switch-wrapper.disabled{
+                border-color:gray;
+                border-style:dashed;
+            }
+            .multistate-switch-wrapper{
+                border:1px solid var(--nr-dashboard-widgetColor);
+                display: flex;
+                flex-flow: column nowrap;
+                justify-content: center;
+                align-items: center;
+                position:relative;
+                font-size: 14px;
+                font-weight: 425;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+                margin: auto 0;
+                width:100%;
+                height: 1.55em;
+            }
+            .multistate-slider-wrapper.disabled{
+                opacity:0.5;
+            }
+            .multistate-slider-wrapper{
+                height: 1em;
+                padding-top: 0.25em;
+                padding-bottom: 0.25em;
+                z-index:0
+            }
+            .multistate-switch-body.disabled{
+                color:gray;
+                pointer-events:none; 
+            }
+            .multistate-switch-body{
+                pointer-events:auto;
+                display: inline-flex;
+                justify-content: flex-start;
+                width: 100%;
+            }
+            .multistate-switch-slider-${config.id}{
+                width: calc((100% - (${config.options.length} * 0.2em)) / ${config.options.length});
+            }
+            .multistate-switch-slider{                
+                background-color: var(--nr-dashboard-widgetColor);
+                position: absolute;
+                height: 1.2em;
+                transform: translate(0.1em, -0.25em);
+                transition: all .4s ease;
+                left: 0%;
+                z-index:0;
+            }
+            .multistate-switch-button-${config.id}{
+                width:calc(100% / ${config.options.length}); 
+            }
+            .multistate-switch-button.disabled{
+                pointer-events:none !important;
+            }
+            .multistate-switch-button.dark{
+                color:var(--nr-dashboard-widgetBgndColor)
+            }
+            .multistate-switch-button.light{
+                color:var(--nr-dashboard-widgetTextColor)
+            }
+            .multistate-switch-button{              
+               text-align:center;
+               z-index:1;
+               outline: none;
+               user-select:none;
+               cursor:pointer;
+               line-height: 1.2em;
+               transition: color 0.5s ease;
+            }
+            .multistate-switch-round{
+                border-radius: 0.8em;
+            }
+        </style>
+        <div class="multistate-switch-container" ng-init='init(` + configAsJson + `)'>
+            <div ng-if="${config.label != ""}" class="multistate-switch-header">
+                <div>${config.label}</div>
+                <span>{{inputState}}</span>
+            </div>
+            <div id="multiStateSwitchContainer_` + config.id + `" class="multistate-switch-wrapper" ng-class="{'multistate-switch-round':(config.rounded)}">
+                <div id="multiStateSwitchBody_` + config.id + `"" class="multistate-switch-body">
+                    <div id="multiStateSwitchSliderWrapper_` + config.id + `" class="multistate-slider-wrapper">
+                        <div id="multiStateSwitchSlider_` + config.id + `" class="multistate-switch-slider multistate-switch-slider-` + config.id + `" ng-class="{'multistate-switch-round':(config.rounded)}"></div>
+                    </div>
+                    <!-- The radio buttons will be inserted here dynamically on the frontend side -->
+                </div>
+            </div>
+        </div>
+        `;
+
+        return html;
+    }
+
+    var ui = undefined;
+    
+    function OutletNode(config) {
         var node = this;
-        node.name = n.name;
-        node.func = n.func;
-        node.outputs = n.outputs;
-        node.ini = n.initialize ? n.initialize.trim() : "";
-        node.fin = n.finalize ? n.finalize.trim() : "";
-        node.libs = n.libs || [];
-
-        if (RED.settings.functionExternalModules !== true && node.libs.length > 0) {
-            throw new Error(RED._("function.error.externalModuleNotAllowed"));
+        if(ui === undefined) {
+            ui = RED.require("node-red-dashboard")(RED);
         }
-
+        config.dark = false
+        if(typeof ui.isDark === "function"){
+            config.dark = ui.isDark()
+            config.widgetColor = ui.getTheme()['widget-backgroundColor'].value          
+        }
+        RED.nodes.createNode(this, config);
+        node.name = config.name;
+        node.func = config.func;
+        node.outputs = config.outputs;
+        node.ini = config.initialize ? config.initialize.trim() : "";
+        node.fin = config.finalize ? config.finalize.trim() : "";
         var handleNodeDoneCall = true;
 
-        // Check to see if the Function appears to call `node.done()`. If so,
-        // we will assume it is well written and does actually call node.done().
-        // Otherwise, we will call node.done() after the function returns regardless.
         if (/node\.done\s*\(\s*\)/.test(node.func)) {
             handleNodeDoneCall = false;
         }
@@ -132,7 +257,7 @@
             "})(msg,__send__,__done__);";
         var finScript = null;
         var finOpt = null;
-        node.topic = n.topic;
+        node.topic = config.topic;
         node.outstandingTimers = [];
         node.outstandingIntervals = [];
         node.clearStatus = false;
@@ -267,6 +392,7 @@
                 }
             }
         };
+
         if (util.hasOwnProperty('promisify')) {
             sandbox.setTimeout[util.promisify.custom] = function(after, value) {
                 return new Promise(function(resolve, reject) {
@@ -276,37 +402,6 @@
             sandbox.promisify = util.promisify;
         }
 
-        if (node.hasOwnProperty("libs")) {
-            let moduleErrors = false;
-            var modules = node.libs;
-            modules.forEach(module => {
-                var vname = module.hasOwnProperty("var") ? module.var : null;
-                if (vname && (vname !== "")) {
-                    if (sandbox.hasOwnProperty(vname) || vname === 'node') {
-                        node.error(RED._("function.error.moduleNameError",{name:vname}))
-                        moduleErrors = true;
-                        return;
-                    }
-                    sandbox[vname] = null;
-                    try {
-                        var spec = module.module;
-                        if (spec && (spec !== "")) {
-                            var lib = RED.require(module.module);
-                            sandbox[vname] = lib;
-                        }
-                    } catch (e) {
-                        //TODO: NLS error message
-                        node.error(RED._("function.error.moduleLoadError",{module:module.spec, error:e.toString()}))
-                        moduleErrors = true;
-                    }
-                }
-            });
-            if (moduleErrors) {
-                throw new Error(RED._("function.error.externalModuleLoadError"));
-            }
-        }
-
-
         const RESOLVING = 0;
         const RESOLVED = 1;
         const ERROR = 2;
@@ -314,19 +409,223 @@
         var messages = [];
         var processMessage = (() => {});
 
-        node.on("input", function(msg,send,done) {
-            if(state === RESOLVING) {
-                messages.push({msg:msg, send:send, done:done});
-            }
-            else if(state === RESOLVED) {
-                processMessage(msg, send, done);
-            }
-        });
-
         var context = vm.createContext(sandbox);
+
         try {
+            config.stateField = config.stateField || 'payload';
+            config.enableField = config.enableField || 'enable';
+            config.inputField = config.inputField || 'input';
+            var html = HTML(config);
+            var done = ui.addWidget({
+                node: node,
+                group: config.group,
+                order: config.order, 
+                width: config.width,
+                height: config.height,
+                format: html,
+                templateScope: "local",
+                emitOnlyNewValues: false,
+                forwardInputMessages: false,
+                storeFrontEndInputAsState: true,
+                convertBack: function (value) {
+                    return value;
+                },
+                beforeEmit: function(msg, value) {   
+                    var newMsg = {};
+                
+                    if (msg) {
+                        // Copy the socket id from the original input message. 
+                        newMsg.socketid = msg.socketid;
+                        
+                        try {
+                            // Get the new state value from the specified message field
+                            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || "payload");
+                        } 
+                        catch(err) {
+                            // No problem because the state field is optional ...
+                        }
+                        
+                        try {
+                            // Get the new enable value from the specified message field
+                            newMsg.enable = RED.util.getMessageProperty(msg, config.enableField);
+                        } 
+                        catch(err) {
+                            // No problem because the enable value is optional ...
+                        }
+
+                        try {
+                            // Get the new enable value from the specified message field
+                            newMsg.input = RED.util.getMessageProperty(msg, config.inputField);
+                        } 
+                        catch(err) {
+                            // No problem because the enable value is optional ...
+                        }
+                    }
+
+                    return { msg: newMsg };
+                },
+                beforeSend: function (msg, orig) {
+                    if (orig) {
+                        var newMsg = {};
+                        // Store the switch state in the specified msg state field
+                        RED.util.setMessageProperty(newMsg, config.stateField, orig.msg.state, true)
+                        //orig.msg = newMsg;
+                        return newMsg;
+                    }
+                },
+                initController: function($scope, events) {
+                    $scope.flag = true;
+
+                    $scope.init = function (config) {
+                        $scope.config = config;
+
+                        $scope.containerDiv = $("#multiStateSwitchContainer_" + config.id)[0];
+                        $scope.sliderDivElement = $("#multiStateSwitchSlider_" + config.id)[0];
+                        $scope.sliderWrapperElement = $("#multiStateSwitchSliderWrapper_" + config.id)[0];
+                        
+                        // Hide selected label when required (by showing slider on top of buttons)
+                        if (config.hideSelectedLabel == true) {
+                            // Use an inline style to apply this only to this node's slider
+                            $scope.sliderWrapperElement.style.zIndex = 3;
+                        }
+
+                        // Get a reference to the sub-DIV element
+                        var toggleRadioDiv = $scope.containerDiv.firstElementChild;
+
+                        // Create all the required  button elements
+                        config.options.forEach(function (option, index) {
+                            var divElement = document.createElement("div");
+                            divElement.setAttribute("class", "multistate-switch-button multistate-switch-button-"+config.id);
+                            divElement.setAttribute("id", "mstbtn_"+config.id+"_"+index)
+                            divElement.innerHTML = option.label;
+                            divElement.addEventListener("click",  function() {
+                                switchStateChanged(option.value, true);
+                            });
+
+                            toggleRadioDiv.appendChild(divElement);
+                        });
+                        // Make sure the initial element gets the correct color
+                        switchStateChanged(config.options[0].value, false);
+                    }
+
+                    $scope.$watch('msg', function(msg) {
+                        // Ignore undefined messages.
+                        if (!msg) {
+                            return;
+                        }
+
+                        //temporary added here to test the disable/enable functionality                            
+                        if(msg.enable === true || msg.enable === false){
+                            disable(!msg.enable);
+                            return;
+                        }
+
+                        if (msg.state != undefined) {
+                            switchStateChanged(msg.state, false);
+                        }
+
+                        if (msg.input != undefined) {
+                            $scope.inputState = msg.input;
+                        }
+                    });
+
+                    function disable(state){                            
+                        //true - widget disabled, false - widget enabled
+                        if(state == true){
+                            $("#multiStateSwitchContainer_"+$scope.config.id).addClass('disabled')
+                            $("#multiStateSwitchBody_"+$scope.config.id).addClass('disabled')                               
+                            $("#multiStateSwitchSliderWrapper_"+$scope.config.id).addClass('disabled')
+                            $scope.config.options.forEach(function (option, index) {
+                                $("#mstbtn_"+$scope.config.id+"_"+index).addClass('disabled')
+                            });
+                        } else {
+                            $("#multiStateSwitchContainer_"+$scope.config.id).removeClass('disabled')
+                            $("#multiStateSwitchBody_"+$scope.config.id).removeClass('disabled')                               
+                            $("#multiStateSwitchSliderWrapper_"+$scope.config.id).removeClass('disabled')
+                            $scope.config.options.forEach(function (option, index) {
+                                $("#mstbtn_"+$scope.config.id+"_"+index).removeClass('disabled')
+                            });
+                        }
+                    }
+
+                    function txtClassToStandOut(bgColor, light, dark) {
+                        var color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
+                        var r = parseInt(color.substring(0, 2), 16);
+                        var g = parseInt(color.substring(2, 4), 16);
+                        var b = parseInt(color.substring(4, 6), 16);
+                        var uicolors = [r / 255, g / 255, b / 255];
+                        var c = uicolors.map((col) => {
+                            if (col <= 0.03928) {
+                            return col / 12.92;
+                            }
+                            return Math.pow((col + 0.055) / 1.055, 2.4);
+                        });
+                        var L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);                           
+                        if($scope.config.dark){
+                            return (L > 0.35) ?  dark : light;
+                        }
+                        return (L > 0.35) ?  light : dark;
+                    }
+                            
+                    function switchStateChanged(newValue, sendMsg) {
+                        
+                        var divIndex = -1;
+                        // Try to find an option with a value identical to the specified value
+                        // For every button be sure that button exists and change mouse cursor and pointer-events
+                        $scope.config.options.forEach(function (option, index) {
+                            if($("#mstbtn_"+$scope.config.id+"_"+index).length){                                    
+                                $("#mstbtn_"+$scope.config.id+"_"+index).css({"cursor":"pointer","pointer-events":"auto"})
+                                $("#mstbtn_"+$scope.config.id+"_"+index).removeClass("light dark")
+                                if (option.value == newValue) {
+                                    $("#mstbtn_"+$scope.config.id+"_"+index).css({"cursor":"default","pointer-events":"none"})
+                                    var color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor                                        
+                                    $("#mstbtn_"+$scope.config.id+"_"+index).addClass(txtClassToStandOut(color,"light","dark"))
+                                    divIndex = index;
+                                }
+                            }                               
+                        });
+
+                        if (divIndex >= 0) {
+                            var percentage = "0%";
+        
+                            if ($scope.config.options.length > 0 && divIndex >= 0) {
+                                percentage = (100 / $scope.config.options.length) * divIndex;
+                                $scope.sliderDivElement.style.left = percentage + "%";
+        
+                                if ($scope.config.useThemeColors != true) {
+                                    $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
+                                }
+                            }
+                            
+                            if ($scope.config.options[divIndex].valueType === "num") {
+                                newValue = Number(newValue);
+                            }
+
+                            if ($scope.config.options[divIndex].valueType === "bool") {
+                                if (newValue === 'true') {
+                                    newValue = true;
+                                } else {
+                                    newValue = false;
+                                }
+                            }
+
+                            if ($scope.config.optionsl[divIndex].valueType === 'auto') {
+                                //function
+                            }
+
+                            if (sendMsg) {
+                                $scope.send({ state: newValue });
+                            }
+                        } else {
+                            console.log("No radio button has value '" + newValue + "'");
+                        }
+                    }
+                }
+            });
+
             var iniScript = null;
             var iniOpt = null;
+
             if (node.ini && (node.ini !== "")) {
                 var iniText = `
                 (async function(__send__) {
@@ -349,7 +648,9 @@
                 iniOpt = createVMOpt(node, " setup");
                 iniScript = new vm.Script(iniText, iniOpt);
             }
+
             node.script = vm.createScript(functionText, createVMOpt(node, ""));
+
             if (node.fin && (node.fin !== "")) {
                 var finText = `(function () {
                     var node = {
@@ -370,7 +671,9 @@
                 finOpt = createVMOpt(node, " cleanup");
                 finScript = new vm.Script(finText, finOpt);
             }
+
             var promise = Promise.resolve();
+
             if (iniScript) {
                 context.__initSend__ = function(msgs) { node.send(msgs); };
                 promise = iniScript.runInContext(context, iniOpt);
@@ -381,14 +684,12 @@
                 context.msg = msg;
                 context.__send__ = send;
                 context.__done__ = done;
-
                 node.script.runInContext(context);
                 context.results.then(function(results) {
                     sendResults(node,send,msg._msgid,results,false);
                     if (handleNodeDoneCall) {
                         done();
                     }
-
                     var duration = process.hrtime(start);
                     var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
                     node.metric("duration", msg, converted);
@@ -436,26 +737,6 @@
                 });
             }
 
-            node.on("close", function() {
-                if (finScript) {
-                    try {
-                        finScript.runInContext(context, finOpt);
-                    }
-                    catch (err) {
-                        node.error(err);
-                    }
-                }
-                while (node.outstandingTimers.length > 0) {
-                    clearTimeout(node.outstandingTimers.pop());
-                }
-                while (node.outstandingIntervals.length > 0) {
-                    clearInterval(node.outstandingIntervals.pop());
-                }
-                if (node.clearStatus) {
-                    node.status({});
-                }
-            });
-
             promise.then(function (v) {
                 var msgs = messages;
                 messages = [];
@@ -472,20 +753,46 @@
                 state = ERROR;
                 node.error(error);
             });
+        } catch (e) {
+            // Server side errors 
+            updateErrorInfo(e);
+            node.error(e);
+            console.trace(e); // stacktrace
+        }
 
-        }
-        catch(err) {
-            // eg SyntaxError - which v8 doesn't include line number information
-            // so we can't do better than this
-            updateErrorInfo(err);
-            node.error(err);
-        }
+        node.on("input", function(msg,send,done) {
+            if(state === RESOLVING) {
+                messages.push({msg:msg, send:send, done:done});
+            }
+            else if(state === RESOLVED) {
+                processMessage(msg, send, done);
+            }
+        });
+
+        node.on("close", function() {
+            if (finScript) {
+                try {
+                    finScript.runInContext(context, finOpt);
+                }
+                catch (err) {
+                    node.error(err);
+                }
+            }
+            while (node.outstandingTimers.length > 0) {
+                clearTimeout(node.outstandingTimers.pop());
+            }
+            while (node.outstandingIntervals.length > 0) {
+                clearInterval(node.outstandingIntervals.pop());
+            }
+            if (node.clearStatus) {
+                node.status({});
+            }
+            if (done) {
+                done();
+            }
+        });
+
     }
-    RED.nodes.registerType("outlet",FunctionNode, {
-        dynamicModuleList: "libs",
-        settings: {
-            functionExternalModules: { value: false, exportable: true }
-        }
-    });
+    RED.nodes.registerType("outlet", OutletNode);
     RED.library.register("functions");
 };

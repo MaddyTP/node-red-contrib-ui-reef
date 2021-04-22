@@ -20,12 +20,15 @@
   "homepage": "https://github.com/MaddyTP/node-red-contrib-ui-reef#readme",
   "node-red": {
     "nodes": {
-      "probe": "probe.js",
-      "switch": "switch.js",
       "outlet": "outlet.js"
     }
   },
   "dependencies": {
     "highcharts": "^9.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.24.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1"
   }
 }
