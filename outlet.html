@@ -32,31 +32,57 @@
             margin-bottom: 2px;
             height: 26px;
         }
-
         .node-libs-entry > span > i {
             display: none;
         }
         .node-libs-entry > span.input-error > i {
             display: inline;
         }
-
     </style>
     <input type="hidden" id="node-input-func">
     <input type="hidden" id="node-input-noerr">
     <input type="hidden" id="node-input-finalize">
     <input type="hidden" id="node-input-initialize">
-
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="common.label.name"></span></label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-name" data-i18n="[placeholder]common.label.name"></div>
     </div>
-
-
-    <div class="form-row func-tabs-row">
-        <ul style="min-width: 600px; margin-bottom: 20px;" id="func-tabs"></ul>
+    
+    <div class="form-row" id="template-row-group">
+        <label for="node-input-group"><i class="fa fa-table"></i> Group</span></label>
+        <input type="text" id="node-input-group">
+    </div>    
+    <div class="form-row" id="template-row-size">
+        <label><i class="fa fa-object-group"></i> Size</span></label>
+        <input type="hidden" id="node-input-width">
+        <input type="hidden" id="node-input-height">
+        <button class="editor-button" id="node-input-size"></button>
     </div>
+    <div class="form-row">
+        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
+        <input type="text" id="node-input-label">
+    </div>
+    <div class="form-row">
+        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> State</label>
+        <input type="text" id="node-input-stateField" style="width:70%">
+    </div>
+    <div class="form-row">
+        <label for="node-input-enableField"><i class="fa fa-unlock-alt"></i> Enable</label>
+        <input type="text" id="node-input-enableField" style="width:70%">
+    </div>
+    <div class='form-row'>
+        <label for='node-input-rounded'><i class='fa fa-gear'></i> Appearance</label>        
+        <span id="appearance-square" style="opacity:1; border:1px solid; padding: 3px 20px 2px 5px; "><i class="fa fa-square"></i></span>
+        <input type="checkbox" id="node-input-rounded" style="display:inline-block; width:auto; vertical-align:baseline; margin-right:5px; margin-left:5px;">
+        <span id="appearance-round" style="opacity:1; border:1px solid; border-radius:15px; padding: 3px 20px 2px 5px; "><i class="fa fa-circle"></i></span>
+    </div> 
+    <div class="form-row">
+        <label for='node-input-useThemeColors'><i class='fa fa-paint-brush'></i> Colors</label>
+        <input type='checkbox' id='node-input-useThemeColors' style='width:auto ;border:none; vertical-align:baseline;' placeholder='0'>
+        <span for='node-input-useThemeColors'> Use theme colors</span>
+    </div>
+    
     <div id="func-tabs-content" style="min-height: calc(100% - 95px);">
-
         <div id="func-tab-config" style="display:none">
             <div class="form-row">
                 <label for="node-input-outputs"><i class="fa fa-random"></i> <span data-i18n="function.label.outputs"></span></label>
@@ -70,28 +96,24 @@
                 <ol id="node-input-libs-container"></ol>
             </div>
         </div>
-
         <div id="func-tab-init" style="display:none">
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-init-editor" ></div>
                 <div style="position: absolute; right:0; bottom: calc(100% - 20px);"><button id="node-init-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
         </div>
-
         <div id="func-tab-body" style="display:none">
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 220px; min-height:150px;" class="node-text-editor" id="node-input-func-editor" ></div>
                 <div style="position: absolute; right:0; bottom: calc(100% - 20px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
         </div>
-
         <div id="func-tab-finalize" style="display:none">
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-finalize-editor" ></div>
                 <div style="position: absolute; right:0; bottom: calc(100% - 20px);"><button id="node-finalize-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
         </div>
-
     </div>
 </script>
 
@@ -120,12 +142,12 @@
 
     var knownFunctionNodes = {};
     RED.events.on("nodes:add", function(n) {
-        if (n.type === "function") {
+        if (n.type === "outlet") {
             knownFunctionNodes[n.id] = n;
         }
     })
     RED.events.on("nodes:remove", function(n) {
-        if (n.type === "function") {
+        if (n.type === "outlet") {
             delete knownFunctionNodes[n.id];
         }
     })
@@ -314,8 +336,8 @@
     }
 
     RED.nodes.registerType('outlet',{
-        color:"#fdd0a2",
-        category: 'function',
+        color:'rgb( 63, 173, 181)',
+        category: 'dashboard',
         defaults: {
             name: {value:""},
             func: {value:"\nreturn msg;"},
@@ -354,7 +376,6 @@
         },
         oneditprepare: function() {
             var that = this;
-
             var tabs = RED.tabs.create({
                 id: "func-tabs",
                 onchange: function(tab) {
