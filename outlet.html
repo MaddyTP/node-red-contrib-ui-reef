@@ -11,15 +11,6 @@
   limitations under the License.
 -->
 <script type="text/html" data-template-name="outlet">
-    <style>
-        .func-tabs-row {
-            margin-bottom: 0;
-        }
-    </style>
-    <input type="hidden" id="node-input-func">
-    <input type="hidden" id="node-input-noerr">
-    <input type="hidden" id="node-input-finalize">
-    <input type="hidden" id="node-input-initialize">
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -50,10 +41,6 @@
         <label for="node-input-inputField"><i class="fa fa-angle-double-right"></i> Input</label>
         <input type="text" id="node-input-inputField" style="width:70%">
     </div>
-    <div class='form-row'>
-        <label for='node-input-rounded'><i class='fa fa-gear'></i> Rounded</label>        
-        <input type="checkbox" id="node-input-rounded" style="display:inline-block; width:auto; vertical-align:baseline; margin-right:5px; margin-left:5px;">
-    </div> 
     <div class="form-row">
         <label for='node-input-useThemeColors'><i class='fa fa-paint-brush'></i> Colors</label>
         <input type='checkbox' id='node-input-useThemeColors' style='width:auto ;border:none; vertical-align:baseline;' placeholder='0'>
@@ -67,46 +54,8 @@
         <ol id="node-input-options-container"></ol>
     </div>
     <div class="form-row">
-        <ul style="min-width: 600px; margin-bottom: 20px;" id="func-tabs"></ul>
-    </div>
-    <div id="func-tabs-content" style="min-height: calc(100% - 95px);">
-        <div id="func-tab-init" style="display:none">
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-init-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px);">
-                    <button id="node-init-expand-js" class="red-ui-button red-ui-button-small">
-                        <i class="fa fa-expand"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div id="func-tab-body" style="display:none">
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="height: 220px; min-height:150px;" class="node-text-editor" id="node-input-func-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px);">
-                    <button id="node-function-expand-js" class="red-ui-button red-ui-button-small">
-                        <i class="fa fa-expand"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div id="func-tab-finalize" style="display:none">
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-finalize-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px);">
-                    <button id="node-finalize-expand-js" class="red-ui-button red-ui-button-small">
-                        <i class="fa fa-expand"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="form-row">
-        <label for="node-input-outputs">
-            <i class="fa fa-random"></i> 
-            <span data-i18n="function.label.outputs"></span>
-        </label>
-        <input id="node-input-outputs" style="width: 60px;" value="1">
+        <input type="checkbox" id="node-input-storestate" style="display:inline-block; width:15px; vertical-align:baseline;">
+        <label for="node-input-storestate" style="width:25%; display:inline"></i> Restore state from context</label>
     </div>
 </script>
 <script type="text/html" data-help-name="outlet">
@@ -134,89 +83,71 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('outlet',{
+    RED.nodes.registerType('outlet', {
         category: 'reef',
         color: 'rgb( 63, 173, 181)',
         defaults: {
-            name: {value: ''},
-            group: {type: 'ui_group', required:true},
-            order: {value: 0},
+            name: { value: '' },
+            group: { type: 'ui_group', required: true },
+            order: { value: 0 },
             width: {
                 value: 6,
-                validate: function(v) {
+                validate: function (v) {
                     var valid = true
-                    var width = v||0;
-                    var currentGroup = $('#node-input-group').val()|| this.group;
+                    var width = v || 0;
+                    var currentGroup = $('#node-input-group').val() || this.group;
                     var groupNode = RED.nodes.node(currentGroup);
                     valid = !groupNode || +width <= +groupNode.width;
-                    $("#node-input-size").toggleClass("input-error",!valid);
+                    $("#node-input-size").toggleClass("input-error", !valid);
                     return valid;
-                }},
-            height: {value: 0},
-            label: {value: 'outlet'},
-            stateField: {value: 'payload'},
-            enableField: {value: 'enable'},
-            inputField: {value: 'input'},
-            rounded: {value: true},
-            useThemeColors: {value: true},
-            options: {value: [],
-                validate:function(v) {
-                    var unique = new Set(v.map(function(o) {return o.value;}));
+                }
+            },
+            height: { value: 0 },
+            label: { value: 'outlet' },
+            stateField: { value: 'payload' },
+            enableField: { value: 'enable' },
+            inputField: { value: 'input' },
+            useThemeColors: { value: true },
+            options: {
+                value: [],
+                validate: function (v) {
+                    var unique = new Set(v.map(function (o) { return o.value; }));
                     return v.length == unique.size && v.length > 1;
                 }
             },
-            //function
-            func: {value:"\nreturn msg;"},
-            outputs: {value:1},
-            noerr: {value:0,required:true,validate:function(v) { return !v; }},
-            initialize: {value:""},
-            finalize: {value:""},
+            storestate: {value: false}
         },
-        inputs:1,
-        outputs:1,
+        inputs: 1,
+        outputs: 1,
         icon: "font-awesome/fa-toggle-off",
         align: 'left',
-        paletteLabel:"outlet",
-        label: function() {
+        paletteLabel: "outlet",
+        label: function () {
             return this.name || (~this.label.indexOf("{{") ? null : this.label) || "outlet";
         },
-        labelStyle: function() {
-            return this.name?"node_label_italic":"";
+        labelStyle: function () {
+            return this.name ? "node_label_italic" : "";
         },
-        oneditprepare: function() {
+        oneditprepare: function () {
             var that = this;
-            //Using the Set to collect unique values and then comparing the count of elements. 
-            var un = new Set(this.options.map(function(o) {return o.value}));
+            var un = new Set(this.options.map(function (o) { return o.value }));
             if (this.options.length != un.size) {
-                //console.log("configuration error - values not unique ")
                 $("#configError").text("Values must be unique")
                 $("#configError").show();
             }
-            else if(this.options.length < 2){
-                //console.log("configuration error - at least 2 options needed")
+            else if (this.options.length < 2) {
                 $("#configError").text("Configure at least two options")
                 $("#configError").show();
             }
             else {
-                // options valid
                 $("#configError").hide();
             }
-
-            $('#node-input-rounded').change(function () {
-                if (this.checked == true) {
-                    $("#appearance-square").css('opacity',"0.4");
-                    $("#appearance-round").css('opacity',"1");                   
-                }else{
-                    $("#appearance-square").css('opacity',"1");
-                    $("#appearance-round").css('opacity',"0.4"); 
-                }
-            });
 
             $("#node-input-size").elementSizer({
                 width: "#node-input-width",
                 group: "#node-input-group"
             });
-            
+
             function getColor(idx) {
                 var colors = ['#009933', '#999999', '#ff6666', '#009999', '#cccc00', '#ff33cc', '#cc6600',
                     '#99ff66', '#660033'
@@ -227,42 +158,36 @@
                 return colors[idx]
             }
 
-            var optionsList = $("#node-input-options-container").css('min-height','200px').editableList({
+            var optionsList = $("#node-input-options-container").css('min-height', '200px').editableList({
                 header: $("<div>").append($.parseHTML(
-                   "<div style='width:40%; display: inline-grid'><b>Label</b></div>" +
-                   "<div style='width:40%; display: inline-grid'><b>Value</b></div>" +
-                   "<div style='width:10%; display: inline-grid' class='node-input-option-color'><b>Color</b></div>")),
-                addItem: function(container, i, option) {
-                    // Add a new row to the editableList
+                    "<div style='width:40%; display: inline-grid'><b>Label</b></div>" +
+                    "<div style='width:40%; display: inline-grid'><b>Value</b></div>" +
+                    "<div style='width:10%; display: inline-grid' class='node-input-option-color'><b>Color</b></div>")),
+                addItem: function (container, i, option) {
                     var row = $('<div/>').appendTo(container);
-                    // Column 1 : Add an input field (type string) to the new row, this represents the option label
-                    var labelField = $('<input/>',{class:"node-input-option-label",type:"text"}).css({"width":"40%","margin-left":"5px","margin-right":"5px"}).appendTo(row);
+                    var labelField = $('<input/>', { class: "node-input-option-label", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
                     labelField.val(option.label || "Option " + i);
-                    // Column 2 : Add an input field (type string) to the new row, this represents the option value
-                    var valueField = $('<input/>',{class:"node-input-option-value",type:"text"}).css({"width":"40%","margin-left":"5px","margin-right":"5px"}).appendTo(row);
-                    valueField.typedInput({types: ['str', 'num', 'bool', {value: 'auto', label: 'auto', hasValue: false}]});
+                    var valueField = $('<input/>', { class: "node-input-option-value", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
+                    valueField.typedInput({ types: ['str', 'num', 'bool'] });
                     valueField.typedInput("type", option.valueType || "str");
                     valueField.typedInput("value", option.value || "option_" + i);
-                    valueField.on('change', function(type, value) {
+                    valueField.on('change', function (type, value) {
                         $("#configError").hide();
                     });
-                    // Column 3 : Add an input field (type color) to the new row, this represents the option color
-                    // Before adding be sure if color field is needed to show or not.
-                    var colofield = $("#node-input-useThemeColors").prop("checked") ? "none" : "inline-block"; 
-                    var colorField = $('<input/>',{class:"node-input-option-color",type:"color"}).css({"width":"10%","margin-left":"5px","display":colofield}).appendTo(row);
-                    colorField.val(option.color || getColor(i));   
+                    var colofield = $("#node-input-useThemeColors").prop("checked") ? "none" : "inline-block";
+                    var colorField = $('<input/>', { class: "node-input-option-color", type: "color" }).css({ "width": "10%", "margin-left": "5px", "display": colofield }).appendTo(row);
+                    colorField.val(option.color || getColor(i));
                 },
                 removable: true
             });
-            
-            // Show all the options (stored in this node) into the editableList
+
             if (this.options) {
                 this.options.forEach(function (option, index) {
-                    optionsList.editableList('addItem', {label:option.label, value:option.value, valueType:option.valueType, color:option.color});
+                    optionsList.editableList('addItem', { label: option.label, value: option.value, valueType: option.valueType, color: option.color });
                 });
             }
-            
-            $("#node-input-useThemeColors").on("change", function(){
+
+            $("#node-input-useThemeColors").on("change", function () {
                 var colorFields = $(".node-input-option-color");
                 if ($(this)[0].checked) {
                     colorFields.hide();
@@ -271,7 +196,7 @@
                     colorFields.show();
                 }
             });
-            
+
             $("#node-input-doubleClickZoomEnabled").change();
 
             $("#node-input-stateField").val(this.stateField);
@@ -291,215 +216,22 @@
                 types: ['msg'],
                 default: 'msg'
             });
-
-            //function
-            var tabs = RED.tabs.create({
-                id: "func-tabs",
-                onchange: function(tab) {
-                    $("#func-tabs-content").children().hide();
-                    $("#" + tab.id).show();
-                }
-            });
-            
-            tabs.addTab({
-                id: "func-tab-init",
-                label: that._("Setup")
-            });
-            tabs.addTab({
-                id: "func-tab-body",
-                label: that._("Function")
-            });
-            tabs.addTab({
-                id: "func-tab-finalize",
-                label: that._("Close")
-            });
-
-            tabs.activateTab("func-tab-body");
-
-            $( "#node-input-outputs" ).spinner({
-                min:0,
-                change: function(event, ui) {
-                    var value = this.value;
-                    if (!value.match(/^\d+$/)) { value = 1;  }
-                    else if (value < this.min) { value = this.min; }
-                    if (value !== this.value) { $(this).spinner("value", value); }
-                }
-            });
-
-            var buildEditor = function(id, value, defaultValue) {
-                var editor = RED.editor.createEditor({
-                    id: id,
-                    mode: 'ace/mode/nrjavascript',
-                    value: value || defaultValue || "",
-                    globals: {
-                        msg:true,
-                        context:true,
-                        RED: true,
-                        util: true,
-                        flow: true,
-                        global: true,
-                        console: true,
-                        Buffer: true,
-                        setTimeout: true,
-                        clearTimeout: true,
-                        setInterval: true,
-                        clearInterval: true
-                    }
-                });
-                if (defaultValue && value === "") {
-                    editor.moveCursorTo(defaultValue.split("\n").length - 1, 0);
-                }
-                return editor;
-            }
-            this.initEditor = buildEditor('node-input-init-editor',$("#node-input-initialize").val(),RED._("node-red:function.text.initialize"))
-            this.editor = buildEditor('node-input-func-editor',$("#node-input-func").val())
-            this.finalizeEditor = buildEditor('node-input-finalize-editor',$("#node-input-finalize").val(),RED._("node-red:function.text.finalize"))
-
-            RED.library.create({
-                url:"functions", // where to get the data from
-                type:"function", // the type of object the library is for
-                editor:this.editor, // the field name the main text body goes to
-                mode:"ace/mode/nrjavascript",
-                fields:[
-                    'name', 'outputs',
-                    {
-                        name: 'initialize',
-                        get: function() {
-                            return that.initEditor.getValue();
-                        },
-                        set: function(v) {
-                            that.initEditor.setValue(v||RED._("node-red:function.text.initialize"), -1);
-                        }
-                    },
-                    {
-                        name: 'finalize',
-                        get: function() {
-                            return that.finalizeEditor.getValue();
-                        },
-                        set: function(v) {
-                            that.finalizeEditor.setValue(v||RED._("node-red:function.text.finalize"), -1);
-                        }
-                    },
-                    {
-                        name: 'info',
-                        get: function() {
-                            return that.infoEditor.getValue();
-                        },
-                        set: function(v) {
-                            that.infoEditor.setValue(v||"", -1);
-                        }
-                    }
-                ],
-                ext:"js"
-            });
-
-            this.editor.focus();
-
-            var expandButtonClickHandler = function(editor) {
-                return function(e) {
-                    e.preventDefault();
-                    var value = editor.getValue();
-                    RED.editor.editJavaScript({
-                        value: value,
-                        width: "Infinity",
-                        cursor: editor.getCursorPosition(),
-                        mode: "ace/mode/nrjavascript",
-                        complete: function(v,cursor) {
-                            editor.setValue(v, -1);
-                            editor.gotoLine(cursor.row+1,cursor.column,false);
-                            setTimeout(function() {
-                                editor.focus();
-                            },300);
-                        }
-                    })
-                }
-            }
-            $("#node-init-expand-js").on("click", expandButtonClickHandler(this.initEditor));
-            $("#node-function-expand-js").on("click", expandButtonClickHandler(this.editor));
-            $("#node-finalize-expand-js").on("click", expandButtonClickHandler(this.finalizeEditor));
-
-            RED.popover.tooltip($("#node-init-expand-js"), RED._("node-red:common.label.expand"));
-            RED.popover.tooltip($("#node-function-expand-js"), RED._("node-red:common.label.expand"));
-            RED.popover.tooltip($("#node-finalize-expand-js"), RED._("node-red:common.label.expand"));
-
         },
-        oneditsave: function() {
+        oneditsave: function () {
             var node = this;
 
             // Copy all the options from the editableList to this node
             node.options = [];
             var optionsList = $("#node-input-options-container").editableList('items');
-            optionsList.each(function(i) {
-                var option    = $(this);
-                var label     = option.find(".node-input-option-label").val();
-                var value     = option.find(".node-input-option-value").typedInput('value');
+            optionsList.each(function (i) {
+                var option = $(this);
+                var label = option.find(".node-input-option-label").val();
+                var value = option.find(".node-input-option-value").typedInput('value');
                 var valueType = option.find(".node-input-option-value").typedInput('type');
-                var color     = option.find(".node-input-option-color").val();
-                
-                node.options.push({label:label, value:value, valueType:valueType, color:color});
+                var color = option.find(".node-input-option-color").val();
+
+                node.options.push({ label: label, value: value, valueType: valueType, color: color });
             });
-
-            //function
-            var noerr = 0;
-            $("#node-input-noerr").val(0);
-
-            var disposeEditor = function(editorName,targetName,defaultValue) {
-                var editor = node[editorName];
-                var annot = editor.getSession().getAnnotations();
-                for (var k=0; k < annot.length; k++) {
-                    if (annot[k].type === "error") {
-                        noerr += annot.length;
-                        break;
-                    }
-                }
-                var val = editor.getValue();
-                if (defaultValue) {
-                    if (val.trim() == defaultValue.trim()) {
-                        val = "";
-                    }
-                }
-                editor.destroy();
-                delete node[editorName];
-                $("#"+targetName).val(val);
-            }
-            disposeEditor("editor","node-input-func");
-            disposeEditor("initEditor","node-input-initialize", RED._("node-red:function.text.initialize"));
-            disposeEditor("finalizeEditor","node-input-finalize", RED._("node-red:function.text.finalize"));
-
-            $("#node-input-noerr").val(noerr);
-            this.noerr = noerr;
-    
-        },
-        oneditcancel: function() {
-            var node = this;
-
-            node.editor.destroy();
-            delete node.editor;
-
-            node.initEditor.destroy();
-            delete node.initEditor;
-
-            node.finalizeEditor.destroy();
-            delete node.finalizeEditor;
-        },
-        oneditresize: function(size) {
-            var rows = $("#dialog-form>div:not(.node-text-editor-row)");
-            var height = $("#dialog-form").height();
-            for (var i=0; i<rows.length; i++) {
-                height -= $(rows[i]).outerHeight(true);
-            }
-            var editorRow = $("#dialog-form>div.node-text-editor-row");
-            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
-            $("#dialog-form .node-text-editor").css("height",height+"px");
-
-            var height = size.height;
-            $("#node-input-init-editor").css("height", (height -45-48)+"px");
-            $("#node-input-func-editor").css("height", (height -45-48)+"px");
-            $("#node-input-finalize-editor").css("height", (height -45-48)+"px");
-
-            this.initEditor.resize();
-            this.editor.resize();
-            this.finalizeEditor.resize();
         }
     });
 </script>
