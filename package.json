@@ -25,7 +25,12 @@
     }
   },
   "dependencies": {
-    "highcharts": "^9.0.1"
+    "events": "^3.3.0",
+    "highcharts": "^9.0.1",
+    "npm": "^7.11.1",
+    "npm-install-to": "^3.0.1",
+    "strip-comments": "^2.0.1",
+    "temp": "^0.9.4"
   },
   "devDependencies": {
     "eslint": "^7.24.0",

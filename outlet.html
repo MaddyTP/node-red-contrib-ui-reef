@@ -34,10 +34,6 @@
         <input type="text" id="node-input-stateField" style="width:70%">
     </div>
     <div class="form-row">
-        <label for="node-input-enableField"><i class="fa fa-unlock-alt"></i> Enable</label>
-        <input type="text" id="node-input-enableField" style="width:70%">
-    </div>
-    <div class="form-row">
         <label for="node-input-inputField"><i class="fa fa-angle-double-right"></i> Input</label>
         <input type="text" id="node-input-inputField" style="width:70%">
     </div>
@@ -57,6 +53,23 @@
         <input type="checkbox" id="node-input-storestate" style="display:inline-block; width:15px; vertical-align:baseline;">
         <label for="node-input-storestate" style="width:25%; display:inline"></i> Restore state from context</label>
     </div>
+    <div class="form-row">
+        <ul style="min-width: 600px; margin-bottom: 20px;" id="func-tabs"></ul>
+    </div>
+
+    <div id="func-tabs-content" style="min-height: calc(100% - 95px);">
+        <div id="func-tab-body" style="display:none">
+            <div class="form-row" style="margin-bottom: 0px;">
+                <input type="hidden" id="node-input-func" autofocus="autofocus">
+                <input type="hidden" id="node-input-noerr">
+            </div>
+            <div class="form-row node-text-editor-row" style="position:relative">
+                <div style="position: absolute; right:0; bottom: calc(100% + 3px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
+                <div style="height: 220px; min-height:120px; margin-top: 30px;" class="node-text-editor" id="node-input-func-editor" ></div>
+            </div>
+        </div>
+    </div>
+
 </script>
 <script type="text/html" data-help-name="outlet">
     <p>A Node Red node to show a switch with multiple states in the Node-RED dashboard.</p>
@@ -64,8 +77,6 @@
     The label this will be displayed on the left side of the button.</p>
     <p><strong>State:</strong><br/>
     The field in the input and output message this will contain the new switch state.</p>
-    <p><strong>Enable:</strong><br/>
-    The field in the input message this will contain a boolean, indicating whether the switch should be enabled or not.  Which means whether it allows user input (click/touch).</p>
     <p><strong>Input:</strong><br/>
     The field in the input message this will contain the outlet current state.</p>
     <p><strong>Rounded:</strong><br/>
@@ -105,7 +116,6 @@
             height: { value: 0 },
             label: { value: 'outlet' },
             stateField: { value: 'payload' },
-            enableField: { value: 'enable' },
             inputField: { value: 'input' },
             useThemeColors: { value: true },
             options: {
@@ -115,7 +125,9 @@
                     return v.length == unique.size && v.length > 1;
                 }
             },
-            storestate: {value: false}
+            storestate: {value: false},
+            func: {value:"\nreturn msg;"},
+            noerr: {value:0,required:true,validate:function(v) { return !v; }},
         },
         inputs: 1,
         outputs: 1,
@@ -205,17 +217,112 @@
                 default: 'msg'
             });
 
-            $("#node-input-enableField").val(this.enableField);
-            $('#node-input-enableField').typedInput({
-                types: ['msg'],
-                default: 'msg'
-            });
-
             $("#node-input-inputField").val(this.inputField);
             $('#node-input-inputField').typedInput({
                 types: ['msg'],
                 default: 'msg'
             });
+
+            //functionx
+            var tabs = RED.tabs.create({
+                id: "func-tabs"
+            });
+ 
+            tabs.addTab({
+                id: "func-tab-body",
+                label: that._("node-red:function.label.function")
+            });
+
+            tabs.activateTab("func-tab-body");
+
+            var buildEditor = function(id, value, defaultValue) {
+                var editor = RED.editor.createEditor({
+                    id: id,
+                    mode: 'ace/mode/nrjavascript',
+                    value: value || defaultValue || "",
+                    globals: {
+                        msg:true,
+                        context:true,
+                        RED: true,
+                        util: true,
+                        flow: true,
+                        global: true,
+                        console: true,
+                        Buffer: true,
+                        setTimeout: true,
+                        clearTimeout: true,
+                        setInterval: true,
+                        clearInterval: true
+                    }
+                });
+                if (defaultValue && value === "") {
+                    editor.moveCursorTo(defaultValue.split("\n").length - 1, 0);
+                }
+                return editor;
+            }
+            this.editor = buildEditor('node-input-func-editor',$("#node-input-func").val())
+
+            RED.library.create({
+                url:"functions", // where to get the data from
+                type:"function", // the type of object the library is for
+                editor:this.editor, // the field name the main text body goes to
+                mode:"ace/mode/nrjavascript",
+                fields:[
+                    'name', 'outputs',
+                    {
+                        name: 'initialize',
+                        get: function() {
+                            return that.initEditor.getValue();
+                        },
+                        set: function(v) {
+                            that.initEditor.setValue(v||RED._("node-red:function.text.initialize"), -1);
+                        }
+                    },
+                    {
+                        name: 'finalize',
+                        get: function() {
+                            return that.finalizeEditor.getValue();
+                        },
+                        set: function(v) {
+                            that.finalizeEditor.setValue(v||RED._("node-red:function.text.finalize"), -1);
+                        }
+                    },
+                    {
+                        name: 'info',
+                        get: function() {
+                            return that.infoEditor.getValue();
+                        },
+                        set: function(v) {
+                            that.infoEditor.setValue(v||"", -1);
+                        }
+                    }
+                ],
+                ext:"js"
+            });
+            this.editor.focus();
+
+
+            var expandButtonClickHandler = function(editor) {
+                return function(e) {
+                    e.preventDefault();
+                    var value = editor.getValue();
+                    RED.editor.editJavaScript({
+                        value: value,
+                        width: "Infinity",
+                        cursor: editor.getCursorPosition(),
+                        mode: "ace/mode/nrjavascript",
+                        complete: function(v,cursor) {
+                            editor.setValue(v, -1);
+                            editor.gotoLine(cursor.row+1,cursor.column,false);
+                            setTimeout(function() {
+                                editor.focus();
+                            },300);
+                        }
+                    })
+                }
+            }
+            $("#node-function-expand-js").on("click", expandButtonClickHandler(this.editor));
+            RED.popover.tooltip($("#node-function-expand-js"), RED._("node-red:common.label.expand"));
         },
         oneditsave: function () {
             var node = this;
@@ -229,9 +336,58 @@
                 var value = option.find(".node-input-option-value").typedInput('value');
                 var valueType = option.find(".node-input-option-value").typedInput('type');
                 var color = option.find(".node-input-option-color").val();
-
                 node.options.push({ label: label, value: value, valueType: valueType, color: color });
             });
+
+            //functionx
+            var noerr = 0;
+            $("#node-input-noerr").val(0);
+
+            var disposeEditor = function(editorName,targetName,defaultValue) {
+                var editor = node[editorName];
+                var annot = editor.getSession().getAnnotations();
+                for (var k=0; k < annot.length; k++) {
+                    if (annot[k].type === "error") {
+                        noerr += annot.length;
+                        break;
+                    }
+                }
+                var val = editor.getValue();
+                if (defaultValue) {
+                    if (val.trim() == defaultValue.trim()) {
+                        val = "";
+                    }
+                }
+                editor.destroy();
+                delete node[editorName];
+                $("#"+targetName).val(val);
+            }
+            disposeEditor("editor","node-input-func");
+
+            $("#node-input-noerr").val(noerr);
+            this.noerr = noerr;
+        },
+        oneditcancel: function() {
+            var node = this;
+
+            node.editor.destroy();
+            delete node.editor;
+        },
+        oneditresize: function(size) {
+            var rows = $("#dialog-form>div:not(.node-text-editor-row)");
+            var height = $("#dialog-form").height();
+            for (var i=0; i<rows.length; i++) {
+                height -= $(rows[i]).outerHeight(true);
+            }
+            var editorRow = $("#dialog-form>div.node-text-editor-row");
+            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+            $(".node-text-editor").css("height",height+"px");
+            this.editor.resize();
+
+            var height = size.height;
+            $("#node-input-func-editor").css("height", (height -145)+"px");
+
+            this.editor.resize();
         }
     });
 </script>
