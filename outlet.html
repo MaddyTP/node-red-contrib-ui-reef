@@ -49,27 +49,21 @@
         <span id="configError" style="color:#DD0000"><b>All Values must be unique.</b></span>
         <ol id="node-input-options-container"></ol>
     </div>
+    <div class="form-row" style="margin-bottom:0;">
+        <label><i class="fa fa-list"></i> Function:</label>
+    </div>
+    <div class="form-row" style="margin-bottom: 0px;">
+        <input type="hidden" id="node-input-func" autofocus="autofocus">
+        <input type="hidden" id="node-input-noerr">
+    </div>
+    <div class="form-row node-text-editor-row" style="position:relative">
+        <div style="position: absolute; right:0; bottom: calc(100% + 3px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
+        <div style="height: 350px;" class="node-text-editor" id="node-input-func-editor" ></div>
+    </div>
     <div class="form-row">
         <input type="checkbox" id="node-input-storestate" style="display:inline-block; width:15px; vertical-align:baseline;">
         <label for="node-input-storestate" style="width:25%; display:inline"></i> Restore state from context</label>
     </div>
-    <div class="form-row">
-        <ul style="min-width: 600px; margin-bottom: 20px;" id="func-tabs"></ul>
-    </div>
-
-    <div id="func-tabs-content" style="min-height: calc(100% - 95px);">
-        <div id="func-tab-body" style="display:none">
-            <div class="form-row" style="margin-bottom: 0px;">
-                <input type="hidden" id="node-input-func" autofocus="autofocus">
-                <input type="hidden" id="node-input-noerr">
-            </div>
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="position: absolute; right:0; bottom: calc(100% + 3px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
-                <div style="height: 220px; min-height:120px; margin-top: 30px;" class="node-text-editor" id="node-input-func-editor" ></div>
-            </div>
-        </div>
-    </div>
-
 </script>
 <script type="text/html" data-help-name="outlet">
     <p>A Node Red node to show a switch with multiple states in the Node-RED dashboard.</p>
@@ -170,7 +164,7 @@
                 return colors[idx]
             }
 
-            var optionsList = $("#node-input-options-container").css('min-height', '200px').editableList({
+            var optionsList = $("#node-input-options-container").css('min-height', '165px').editableList({
                 header: $("<div>").append($.parseHTML(
                     "<div style='width:40%; display: inline-grid'><b>Label</b></div>" +
                     "<div style='width:40%; display: inline-grid'><b>Value</b></div>" +
@@ -225,7 +219,11 @@
 
             //functionx
             var tabs = RED.tabs.create({
-                id: "func-tabs"
+                id: "func-tabs",
+                onchange: function(tab) {
+                    $("#func-tabs-content").children().hide();
+                    $("#" + tab.id).show();
+                }
             });
  
             tabs.addTab({
@@ -385,7 +383,7 @@
             this.editor.resize();
 
             var height = size.height;
-            $("#node-input-func-editor").css("height", (height -145)+"px");
+            $("#node-input-func-editor").css("height", (height - 635)+"px");
 
             this.editor.resize();
         }
