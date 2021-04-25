@@ -200,7 +200,27 @@ module.exports = function (RED) {
                 config.widgetColor = ui.getTheme()['widget-backgroundColor'].value
             }
             RED.nodes.createNode(this, config);
+            this.repeat = config.repeat;
+            this.interval_id = null;
             var node = this;
+
+            node.repeaterSetup = function () {
+                if (this.repeat && !isNaN(this.repeat) && this.repeat > 0) {
+                    this.repeat = this.repeat * 1000;
+                    this.interval_id = setInterval(function () {
+                        node.emit("input", {});
+                    }, this.repeat);
+                }
+            };
+
+            if (this.once) {
+                this.onceTimeout = setTimeout(function () {
+                    node.emit("input", {});
+                    node.repeaterSetup();
+                }, this.onceDelay);
+            } else {
+                node.repeaterSetup();
+            }
 
             config.initState = node.context().get('state');
             if (config.initState === undefined) {

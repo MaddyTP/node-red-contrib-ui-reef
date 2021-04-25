@@ -60,6 +60,17 @@
         <div style="position: absolute; right:0; bottom: calc(100% + 3px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
         <div style="height: 350px;" class="node-text-editor" id="node-input-func-editor" ></div>
     </div>
+
+    <div class="form-row">
+        <label for=""><i class="fa fa-repeat"></i> Interval:</label>
+        <input id="inject-time-interval-count" class="inject-time-count" value="1">
+        <select style="width:150px" id="inject-time-interval-units">
+            <option value="s">Seconds</option>
+            <option value="m">Minutes</option>
+            <option value="h">Hours</option>
+        </select><br/>
+    </div>
+
     <div class="form-row">
         <input type="checkbox" id="node-input-storestate" style="display:inline-block; width:15px; vertical-align:baseline;">
         <label for="node-input-storestate" style="width:25%; display:inline"></i> Restore state from context</label>
@@ -119,9 +130,10 @@
                     return v.length == unique.size && v.length > 1;
                 }
             },
-            storestate: {value: false},
-            func: {value:"\nreturn msg;"},
-            noerr: {value:0,required:true,validate:function(v) { return !v; }},
+            storestate: { value: false },
+            func: { value: "\nreturn msg;" },
+            noerr: { value: 0, required: true, validate: function (v) { return !v; } },
+            repeat: { value: 5, validate: function (v) { return ((v === "") || (RED.validators.number(v) && (v >= 1) && (v <= 2147483))) } }
         },
         inputs: 1,
         outputs: 1,
@@ -184,7 +196,8 @@
                     var colorField = $('<input/>', { class: "node-input-option-color", type: "color" }).css({ "width": "10%", "margin-left": "5px", "display": colofield }).appendTo(row);
                     colorField.val(option.color || getColor(i));
                 },
-                removable: true
+                removable: true,
+                sortable: true
             });
 
             if (this.options) {
@@ -217,15 +230,26 @@
                 default: 'msg'
             });
 
+            $(".inject-time-count").spinner({
+                min: 1
+            });
+
+            var r = "s";
+            var c = this.repeat;
+            if (this.repeat % 60 === 0) { r = "m"; c = c / 60; }
+            if (this.repeat % 1440 === 0) { r = "h"; c = c / 60; }
+            $("#inject-time-interval-count").val(c);
+            $("#inject-time-interval-units").val(r);
+
             //functionx
             var tabs = RED.tabs.create({
                 id: "func-tabs",
-                onchange: function(tab) {
+                onchange: function (tab) {
                     $("#func-tabs-content").children().hide();
                     $("#" + tab.id).show();
                 }
             });
- 
+
             tabs.addTab({
                 id: "func-tab-body",
                 label: that._("node-red:function.label.function")
@@ -233,14 +257,14 @@
 
             tabs.activateTab("func-tab-body");
 
-            var buildEditor = function(id, value, defaultValue) {
+            var buildEditor = function (id, value, defaultValue) {
                 var editor = RED.editor.createEditor({
                     id: id,
                     mode: 'ace/mode/nrjavascript',
                     value: value || defaultValue || "",
                     globals: {
-                        msg:true,
-                        context:true,
+                        msg: true,
+                        context: true,
                         RED: true,
                         util: true,
                         flow: true,
@@ -258,50 +282,50 @@
                 }
                 return editor;
             }
-            this.editor = buildEditor('node-input-func-editor',$("#node-input-func").val())
+            this.editor = buildEditor('node-input-func-editor', $("#node-input-func").val())
 
             RED.library.create({
-                url:"functions", // where to get the data from
-                type:"function", // the type of object the library is for
-                editor:this.editor, // the field name the main text body goes to
-                mode:"ace/mode/nrjavascript",
-                fields:[
+                url: "functions", // where to get the data from
+                type: "function", // the type of object the library is for
+                editor: this.editor, // the field name the main text body goes to
+                mode: "ace/mode/nrjavascript",
+                fields: [
                     'name', 'outputs',
                     {
                         name: 'initialize',
-                        get: function() {
+                        get: function () {
                             return that.initEditor.getValue();
                         },
-                        set: function(v) {
-                            that.initEditor.setValue(v||RED._("node-red:function.text.initialize"), -1);
+                        set: function (v) {
+                            that.initEditor.setValue(v || RED._("node-red:function.text.initialize"), -1);
                         }
                     },
                     {
                         name: 'finalize',
-                        get: function() {
+                        get: function () {
                             return that.finalizeEditor.getValue();
                         },
-                        set: function(v) {
-                            that.finalizeEditor.setValue(v||RED._("node-red:function.text.finalize"), -1);
+                        set: function (v) {
+                            that.finalizeEditor.setValue(v || RED._("node-red:function.text.finalize"), -1);
                         }
                     },
                     {
                         name: 'info',
-                        get: function() {
+                        get: function () {
                             return that.infoEditor.getValue();
                         },
-                        set: function(v) {
-                            that.infoEditor.setValue(v||"", -1);
+                        set: function (v) {
+                            that.infoEditor.setValue(v || "", -1);
                         }
                     }
                 ],
-                ext:"js"
+                ext: "js"
             });
             this.editor.focus();
 
 
-            var expandButtonClickHandler = function(editor) {
-                return function(e) {
+            var expandButtonClickHandler = function (editor) {
+                return function (e) {
                     e.preventDefault();
                     var value = editor.getValue();
                     RED.editor.editJavaScript({
@@ -309,12 +333,12 @@
                         width: "Infinity",
                         cursor: editor.getCursorPosition(),
                         mode: "ace/mode/nrjavascript",
-                        complete: function(v,cursor) {
+                        complete: function (v, cursor) {
                             editor.setValue(v, -1);
-                            editor.gotoLine(cursor.row+1,cursor.column,false);
-                            setTimeout(function() {
+                            editor.gotoLine(cursor.row + 1, cursor.column, false);
+                            setTimeout(function () {
                                 editor.focus();
-                            },300);
+                            }, 300);
                         }
                     })
                 }
@@ -337,14 +361,27 @@
                 node.options.push({ label: label, value: value, valueType: valueType, color: color });
             });
 
+            var repeat = 0;
+            var count = $("#inject-time-interval-count").val();
+            var units = $("#inject-time-interval-units").val();
+            if (units == "s") {
+                node.repeat = count;
+            } else {
+                if (units == "m") {
+                    node.repeat = count * 60;
+                } else if (units == "h") {
+                    node.repeat = count * 60 * 60;
+                }
+            }
+
             //functionx
             var noerr = 0;
             $("#node-input-noerr").val(0);
 
-            var disposeEditor = function(editorName,targetName,defaultValue) {
+            var disposeEditor = function (editorName, targetName, defaultValue) {
                 var editor = node[editorName];
                 var annot = editor.getSession().getAnnotations();
-                for (var k=0; k < annot.length; k++) {
+                for (var k = 0; k < annot.length; k++) {
                     if (annot[k].type === "error") {
                         noerr += annot.length;
                         break;
@@ -358,32 +395,32 @@
                 }
                 editor.destroy();
                 delete node[editorName];
-                $("#"+targetName).val(val);
+                $("#" + targetName).val(val);
             }
-            disposeEditor("editor","node-input-func");
+            disposeEditor("editor", "node-input-func");
 
             $("#node-input-noerr").val(noerr);
             this.noerr = noerr;
         },
-        oneditcancel: function() {
+        oneditcancel: function () {
             var node = this;
 
             node.editor.destroy();
             delete node.editor;
         },
-        oneditresize: function(size) {
+        oneditresize: function (size) {
             var rows = $("#dialog-form>div:not(.node-text-editor-row)");
             var height = $("#dialog-form").height();
-            for (var i=0; i<rows.length; i++) {
+            for (var i = 0; i < rows.length; i++) {
                 height -= $(rows[i]).outerHeight(true);
             }
             var editorRow = $("#dialog-form>div.node-text-editor-row");
-            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
-            $(".node-text-editor").css("height",height+"px");
+            height -= (parseInt(editorRow.css("marginTop")) + parseInt(editorRow.css("marginBottom")));
+            $(".node-text-editor").css("height", height + "px");
             this.editor.resize();
 
             var height = size.height;
-            $("#node-input-func-editor").css("height", (height - 635)+"px");
+            $("#node-input-func-editor").css("height", (height - 685) + "px");
 
             this.editor.resize();
         }
