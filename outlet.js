@@ -200,27 +200,7 @@ module.exports = function (RED) {
                 config.widgetColor = ui.getTheme()['widget-backgroundColor'].value
             }
             RED.nodes.createNode(this, config);
-            this.repeat = config.repeat;
-            this.interval_id = null;
             var node = this;
-
-            node.repeaterSetup = function () {
-                if (this.repeat && !isNaN(this.repeat) && this.repeat > 0) {
-                    this.repeat = this.repeat * 1000;
-                    this.interval_id = setInterval(function () {
-                        node.emit("input", {});
-                    }, this.repeat);
-                }
-            };
-
-            if (this.once) {
-                this.onceTimeout = setTimeout(function () {
-                    node.emit("input", {});
-                    node.repeaterSetup();
-                }, this.onceDelay);
-            } else {
-                node.repeaterSetup();
-            }
 
             config.initState = node.context().get('state');
             if (config.initState === undefined) {
@@ -316,6 +296,7 @@ module.exports = function (RED) {
 
                     function switchStateChanged(newValue, sendMsg) {
                         var divIndex = -1;
+                        var interval_id = null;
                         // Try to find an option with a value identical to the specified value
                         // For every button be sure that button exists and change mouse cursor and pointer-events
                         $scope.config.options.forEach(function (option, index) {
@@ -352,8 +333,17 @@ module.exports = function (RED) {
                                     newValue = false;
                                 }
                             }
-                            if (sendMsg) {
-                                $scope.send({ state: newValue });
+                            if ($scope.config.options[divIndex].valueType === "func") {
+                                interval_id = setTimeout(function () {
+                                    $scope.send({ payload: 'test' });
+                                }, $scope.config.repeat * 1000);
+                            } else {
+                                if (interval_id !== null) {
+                                    clearInterval(interval_id);
+                                }
+                                if (sendMsg) {
+                                    $scope.send({ state: newValue });
+                                }
                             }
                         }
                         else {
@@ -659,9 +649,6 @@ module.exports = function (RED) {
                     var duration = process.hrtime(start);
                     var converted = Math.floor((duration[0] * 1e9 + duration[1]) / 10000) / 100;
                     node.metric("duration", msg, converted);
-                    if (process.env.NODE_RED_FUNCTION_TIME) {
-                        node.status({ fill: "yellow", shape: "dot", text: "" + converted });
-                    }
                 }).catch(err => {
                     if ((typeof err === "object") && err.hasOwnProperty("stack")) {
                         var index = err.stack.search(/\n\s*at ContextifyScript.Script.runInContext/);
@@ -761,6 +748,9 @@ module.exports = function (RED) {
             }
             if (node.clearStatus) {
                 node.status({});
+            }
+            if (node.interval_id !== null) {
+                clearInterval(node.interval_id);
             }
             if (done) {
                 done();
