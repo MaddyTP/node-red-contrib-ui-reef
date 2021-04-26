@@ -60,7 +60,6 @@
         <div style="position: absolute; right:0; bottom: calc(100% + 3px);"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
         <div style="height: 350px;" class="node-text-editor" id="node-input-func-editor" ></div>
     </div>
-
     <div class="form-row">
         <label for=""><i class="fa fa-repeat"></i> Interval:</label>
         <input id="inject-time-interval-count" class="inject-time-count" value="1">
@@ -70,7 +69,6 @@
             <option value="h">Hours</option>
         </select><br/>
     </div>
-
     <div class="form-row">
         <input type="checkbox" id="node-input-storestate" style="display:inline-block; width:15px; vertical-align:baseline;">
         <label for="node-input-storestate" style="width:25%; display:inline"></i> Restore state from context</label>
@@ -186,7 +184,7 @@
                     var labelField = $('<input/>', { class: "node-input-option-label", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
                     labelField.val(option.label || "Option " + i);
                     var valueField = $('<input/>', { class: "node-input-option-value", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
-                    valueField.typedInput({ types: ['str', 'num', 'bool'] });
+                    valueField.typedInput({ types: ['str', 'num', 'bool', {value: 'func', label: 'function', hasValue: false}]});
                     valueField.typedInput("type", option.valueType || "str");
                     valueField.typedInput("value", option.value || "option_" + i);
                     valueField.on('change', function (type, value) {
@@ -322,7 +320,6 @@
                 ext: "js"
             });
             this.editor.focus();
-
 
             var expandButtonClickHandler = function (editor) {
                 return function (e) {
