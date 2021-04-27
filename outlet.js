@@ -192,6 +192,7 @@ module.exports = function (RED) {
     function OutletNode(config) {
         try {
             this.interval_id = null;
+            this.repeat = config.repeat * 1000;
             var node = this;
             node.name = config.name;
             node.func = config.func;
@@ -210,170 +211,6 @@ module.exports = function (RED) {
             }
 
             RED.nodes.createNode(this, config);
-
-            config.initState = node.context().get('state');
-            if (config.initState === undefined) {
-                config.initState = config.options[0].value;
-            };
-
-            if (checkConfig(node, config)) {
-                var html = HTML(config);
-                var done = ui.addWidget({
-                    node: node,
-                    group: config.group,
-                    order: config.order,
-                    width: config.width,
-                    height: config.height,
-                    format: html,
-                    templateScope: "local",
-                    emitOnlyNewValues: false,
-                    forwardInputMessages: false,
-                    storeFrontEndInputAsState: true,
-                    convertBack: function (value) {
-                        return value;
-                    },
-                    beforeEmit: function (msg, value) {
-                        if (msg) {
-                            var newMsg = {};
-                            newMsg.socketid = msg.socketid;
-                            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
-                            newMsg.input = RED.util.getMessageProperty(msg, config.inputField || 'input');
-                            return { msg: newMsg };
-                        }
-                    },
-                    beforeSend: function (msg) {
-                        if (msg) {
-                            var newMsg = {};
-                            var newValue = null;
-                            if (msg._type === 'func') {
-                                newValue = funcScript.runInContext(context, funcOpt);
-                            } else {
-                                newValue = msg.state;
-                            }
-                            if (config.storestate) { node.context().set('state', msg.state) };
-                            RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
-                            return newMsg;
-                        }
-                    },
-                    initController: function ($scope, events) {
-                        var interval_id;
-                        $scope.flag = true;
-                        $scope.init = function (config) {
-                            $scope.config = config;
-                            $scope.containerDiv = $("#multiStateSwitchContainer_" + config.id)[0];
-                            $scope.sliderDivElement = $("#multiStateSwitchSlider_" + config.id)[0];
-                            $scope.sliderWrapperElement = $("#multiStateSwitchSliderWrapper_" + config.id)[0];
-                            // Get a reference to the sub-DIV element
-                            var toggleRadioDiv = $scope.containerDiv.firstElementChild;
-                            // Create all the required  button elements
-                            config.options.forEach(function (option, index) {
-                                var divElement = document.createElement("div");
-                                divElement.setAttribute("class", "multistate-switch-button multistate-switch-button-" + config.id);
-                                divElement.setAttribute("id", "mstbtn_" + config.id + "_" + index)
-                                divElement.innerHTML = option.label;
-                                divElement.addEventListener("click", function () {
-                                    switchStateChanged(option.value, true);
-                                });
-                                toggleRadioDiv.appendChild(divElement);
-                            });
-                            // Make sure the initial element gets the correct color
-                            switchStateChanged(config.options[0].value, false);
-                        };
-
-                        $scope.$watch('msg', function (msg) {
-                            // Ignore undefined messages.
-                            if (!msg) {
-                                return;
-                            }
-                            if (msg.state !== undefined) {
-                                switchStateChanged(msg.state.toString(), false);
-                            }
-                            if (msg.input !== undefined) {
-                                $scope.inputState = msg.input;
-                            }
-                        });
-
-                        function txtClassToStandOut(bgColor, light, dark) {
-                            var color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
-                            var r = parseInt(color.substring(0, 2), 16);
-                            var g = parseInt(color.substring(2, 4), 16);
-                            var b = parseInt(color.substring(4, 6), 16);
-                            var uicolors = [r / 255, g / 255, b / 255];
-                            var c = uicolors.map((col) => {
-                                if (col <= 0.03928) {
-                                    return col / 12.92;
-                                }
-                                return Math.pow((col + 0.055) / 1.055, 2.4);
-                            });
-                            var L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);
-                            if ($scope.config.dark) {
-                                return (L > 0.35) ? dark : light;
-                            }
-                            return (L > 0.35) ? light : dark;
-                        }
-
-                        function switchStateChanged(newValue, sendMsg) {
-                            var divIndex = -1;
-                            var newMsg = {};
-                            // Try to find an option with a value identical to the specified value
-                            // For every button be sure that button exists and change mouse cursor and pointer-events
-                            $scope.config.options.forEach(function (option, index) {
-                                if ($("#mstbtn_" + $scope.config.id + "_" + index).length) {
-                                    $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "pointer", "pointer-events": "auto" })
-                                    $("#mstbtn_" + $scope.config.id + "_" + index).removeClass("light dark")
-                                    if (option.value == newValue) {
-                                        // selected button inactive                                                                                                                     
-                                        $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "default", "pointer-events": "none" })
-                                        // ensure the button text stand out
-                                        var color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor
-                                        $("#mstbtn_" + $scope.config.id + "_" + index).addClass(txtClassToStandOut(color, "light", "dark"))
-                                        divIndex = index;
-                                    }
-                                }
-                            });
-                            if (divIndex >= 0) {
-                                var percentage = "0%";
-                                if ($scope.config.options.length > 0 && divIndex >= 0) {
-                                    percentage = (100 / $scope.config.options.length) * divIndex;
-                                    $scope.sliderDivElement.style.left = percentage + "%";
-                                    if ($scope.config.useThemeColors != true) {
-                                        $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
-                                    }
-                                }
-                                if ($scope.config.options[divIndex].valueType === "str") {
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "num") {
-                                    newValue = Number(newValue);
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "bool") {
-                                    if (newValue === 'true') {
-                                        newValue = true;
-                                    } else {
-                                        newValue = false;
-                                    }
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "func") {
-                                    newMsg.state = newValue;
-                                    newMsg._type = 'func';
-                                    interval_id = setInterval(() => {
-                                        $scope.send(newMsg);
-                                    }, $scope.config.repeat * 1000);
-                                } else {
-                                    clearInterval(interval_id);
-                                    if (sendMsg) {
-                                        $scope.send(newMsg);
-                                    }
-                                }
-                            } else {
-                                console.log("No radio button has value '" + newValue + "'");
-                            }
-                        }
-                    }
-                });
-            }
 
             //functionx
 
@@ -508,7 +345,7 @@ module.exports = function (RED) {
             }
 
             var funcText = `
-                    (async function(__send__) {
+                    (function() {
                         var node = {
                             id:__node__.id,
                             name:__node__.name,
@@ -600,21 +437,21 @@ module.exports = function (RED) {
                 }
             }, this);
 
-            var checkPackageLoad = function () {
-                var downloadProgressResult = null;
-                if (requiredModules.length != 0) {
-                    requiredModules.forEach(function (npmModule) {
-                        if (!(installedModules.hasOwnProperty(npmModule.fullName))) {
-                            downloadProgressResult = false;
-                        } else {
-                            downloadProgressResult = (downloadProgressResult !== null) ? (downloadProgressResult && true) : true
-                        }
-                    }, this);
-                } else {
-                    downloadProgressResult = true;
-                }
-                return downloadProgressResult;
-            };
+            // var checkPackageLoad = function () {
+            //     var downloadProgressResult = null;
+            //     if (requiredModules.length != 0) {
+            //         requiredModules.forEach(function (npmModule) {
+            //             if (!(installedModules.hasOwnProperty(npmModule.fullName))) {
+            //                 downloadProgressResult = false;
+            //             } else {
+            //                 downloadProgressResult = (downloadProgressResult !== null) ? (downloadProgressResult && true) : true
+            //             }
+            //         }, this);
+            //     } else {
+            //         downloadProgressResult = true;
+            //     }
+            //     return downloadProgressResult;
+            // };
 
             var requireOverload = function (moduleName) {
                 try {
@@ -629,22 +466,195 @@ module.exports = function (RED) {
 
             var context = vm.createContext(sandbox);
 
-            var funcScript = null;
-            var funcOpt = null;
-            if (node.func !== '') {
-                funcOpt = createVMOpt(node, '');
-                funcScript = new vm.Script(funcText, funcOpt);
+            if (node.func && node.func !== '') {
+                var funcOpt = createVMOpt(node, '');
+                var funcScript = new vm.Script(funcText, funcOpt);
+                context.__funcSend__ = function () { return; };
             }
 
-            if (funcScript) {
-                context.__funcSend__ = function (msgs) { node.send(msgs); };
-                Promise.resolve(funcScript.runInContext(context, funcOpt))
-                    .then((v) => {
-                        node.send(v);
-                    })
-                    .catch((err) => {
-                        node.error(err);
-                    });
+            node.repeaterSetup = function (stateField) {
+                if (this.repeat && !isNaN(this.repeat) && this.repeat > 0 && funcScript !== '' && this.interval_id === null) {
+                    this.interval_id = setInterval(function () {
+                        var newMsg = {};
+                        var newValue = funcScript.runInContext(context, funcOpt);
+                        RED.util.setMessageProperty(newMsg, stateField, newValue, true);
+                        node.send(newMsg);
+                    }, this.repeat);
+                    node.outstandingIntervals.push(this.interval_id);
+                }
+            }
+
+            node.cancelRepeater = function () {
+                clearInterval(this.interval_id);
+                this.interval_id = null;
+            }
+
+            config.initOpt = node.context().get('state');
+            if (config.initOpt === undefined) {
+                config.initOpt = config.options[0];
+            }
+            if (config.initOpt.valueType === 'func' && node.func && node.func !== '') {
+                node.repeaterSetup(config.stateField);
+            }
+
+            if (checkConfig(node, config)) {
+                var html = HTML(config);
+                var done = ui.addWidget({
+                    node: node,
+                    group: config.group,
+                    order: config.order,
+                    width: config.width,
+                    height: config.height,
+                    format: html,
+                    templateScope: "local",
+                    emitOnlyNewValues: false,
+                    forwardInputMessages: false,
+                    storeFrontEndInputAsState: true,
+                    convertBack: function (value) {
+                        return value;
+                    },
+                    beforeEmit: function (msg, value) {
+                        if (msg) {
+                            var newMsg = {};
+                            newMsg.socketid = msg.socketid;
+                            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
+                            newMsg.input = RED.util.getMessageProperty(msg, config.inputField || 'input');
+                            return { msg: newMsg };
+                        }
+                    },
+                    beforeSend: function (msg, orig) {
+                        if (orig) {
+                            var newMsg = {};
+                            var newValue = null;
+                            if (orig.msg.option.valueType === 'func') {
+                                if (node.func && node.func !== '') {
+                                    newValue = funcScript.runInContext(context, funcOpt);
+                                    RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
+                                    node.repeaterSetup(config.stateField);
+                                }
+                            } else {
+                                node.cancelRepeater();
+                                newValue = orig.msg.state;
+                                RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
+                            }
+                            if (config.storestate) {
+                                node.context().set('state', orig.msg.option)
+                            };
+                            return newMsg;
+                        }
+                    },
+                    initController: function ($scope, events) {
+                        $scope.flag = true;
+                        $scope.init = function (config) {
+                            $scope.config = config;
+                            $scope.containerDiv = $("#multiStateSwitchContainer_" + config.id)[0];
+                            $scope.sliderDivElement = $("#multiStateSwitchSlider_" + config.id)[0];
+                            $scope.sliderWrapperElement = $("#multiStateSwitchSliderWrapper_" + config.id)[0];
+                            // Get a reference to the sub-DIV element
+                            var toggleRadioDiv = $scope.containerDiv.firstElementChild;
+                            // Create all the required  button elements
+                            config.options.forEach(function (option, index) {
+                                var divElement = document.createElement("div");
+                                divElement.setAttribute("class", "multistate-switch-button multistate-switch-button-" + config.id);
+                                divElement.setAttribute("id", "mstbtn_" + config.id + "_" + index)
+                                divElement.innerHTML = option.label;
+                                divElement.addEventListener("click", function () {
+                                    switchStateChanged(option.value, true);
+                                });
+                                toggleRadioDiv.appendChild(divElement);
+                            });
+                            // Make sure the initial element gets the correct color
+                            switchStateChanged(config.initOpt.value, false);
+                        };
+
+                        $scope.$watch('msg', function (msg) {
+                            // Ignore undefined messages.
+                            if (!msg) {
+                                return;
+                            }
+                            if (msg.state !== undefined) {
+                                switchStateChanged(msg.state.toString(), false);
+                            }
+                            if (msg.input !== undefined) {
+                                $scope.inputState = msg.input;
+                            }
+                        });
+
+                        function txtClassToStandOut(bgColor, light, dark) {
+                            var color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
+                            var r = parseInt(color.substring(0, 2), 16);
+                            var g = parseInt(color.substring(2, 4), 16);
+                            var b = parseInt(color.substring(4, 6), 16);
+                            var uicolors = [r / 255, g / 255, b / 255];
+                            var c = uicolors.map((col) => {
+                                if (col <= 0.03928) {
+                                    return col / 12.92;
+                                }
+                                return Math.pow((col + 0.055) / 1.055, 2.4);
+                            });
+                            var L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);
+                            if ($scope.config.dark) {
+                                return (L > 0.35) ? dark : light;
+                            }
+                            return (L > 0.35) ? light : dark;
+                        }
+
+                        function switchStateChanged(newValue, sendMsg) {
+                            var divIndex = -1;
+                            var newMsg = {};
+                            // Try to find an option with a value identical to the specified value
+                            // For every button be sure that button exists and change mouse cursor and pointer-events
+                            $scope.config.options.forEach(function (option, index) {
+                                if ($("#mstbtn_" + $scope.config.id + "_" + index).length) {
+                                    $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "pointer", "pointer-events": "auto" })
+                                    $("#mstbtn_" + $scope.config.id + "_" + index).removeClass("light dark")
+                                    if (option.value == newValue) {
+                                        // selected button inactive                                                                                                                     
+                                        $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "default", "pointer-events": "none" })
+                                        // ensure the button text stand out
+                                        var color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor
+                                        $("#mstbtn_" + $scope.config.id + "_" + index).addClass(txtClassToStandOut(color, "light", "dark"))
+                                        divIndex = index;
+                                    }
+                                }
+                            });
+                            if (divIndex >= 0) {
+                                var percentage = "0%";
+                                newMsg.option = $scope.config.options[divIndex];
+                                if ($scope.config.options.length > 0 && divIndex >= 0) {
+                                    percentage = (100 / $scope.config.options.length) * divIndex;
+                                    $scope.sliderDivElement.style.left = percentage + "%";
+                                    if ($scope.config.useThemeColors != true) {
+                                        $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
+                                    }
+                                }
+                                if ($scope.config.options[divIndex].valueType === "str") {
+                                    newMsg.state = newValue;
+                                }
+                                if ($scope.config.options[divIndex].valueType === "num") {
+                                    newValue = Number(newValue);
+                                    newMsg.state = newValue;
+                                }
+                                if ($scope.config.options[divIndex].valueType === "bool") {
+                                    if (newValue === 'true') {
+                                        newValue = true;
+                                    } else {
+                                        newValue = false;
+                                    }
+                                    newMsg.state = newValue;
+                                }
+                                if ($scope.config.options[divIndex].valueType === "func") {
+                                    newMsg.state = newValue;
+                                }
+                                if (sendMsg) {
+                                    $scope.send(newMsg);
+                                }
+                            } else {
+                                console.log("No radio button has value '" + newValue + "'");
+                            }
+                        }
+                    }
+                });
             }
 
         } catch (e) {
