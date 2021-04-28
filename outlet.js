@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-param-reassign */
 /**
  * Copyright 2021 Bart Butenaers & hotNipi
  *
@@ -13,17 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * */
+const util = require('util');
+const vm = require('vm');
+const npm = require('npm');
+const strip = require('strip-comments');
+const { npmInstallTo } = require('npm-install-to');
+const temp = require('temp').track();
 
-module.exports = function (RED) {
-    var settings = RED.settings;
-    var util = require("util");
-    var vm = require("vm");
-
-    function HTML(config) {
-        delete config.func;
-        config.id = config.id.replace(".", "_");
-        var configAsJson = JSON.stringify(config);
-        var html = String.raw`
+module.exports = (RED) => {
+  function HTML(config) {
+    delete config.func;
+    config.id = config.id.replace('.', '_');
+    const configAsJson = JSON.stringify(config);
+    const html = String.raw`
       <style>
           .multistate-switch-container{
               display: block;
@@ -108,7 +113,7 @@ module.exports = function (RED) {
           .multistate-switch-button.light{
               color:var(--nr-dashboard-widgetTextColor)
           }
-          .multistate-switch-button{              
+          .multistate-switch-button{
              text-align:center;
              z-index:1;
              outline: none;
@@ -121,18 +126,18 @@ module.exports = function (RED) {
               border-radius: 0.8em;
           }
       </style>
-      <div class="multistate-switch-container" ng-init='init(` + configAsJson + `)'>
-          <div ng-if="${config.label != ""}" class="multistate-switch-header">
+      <div class="multistate-switch-container" ng-init='init(${configAsJson})'>
+          <div ng-if="${config.label !== ''}" class="multistate-switch-header">
               <div>${config.label}</div>
               <div>
                   <span>{{inputState}}</span>
                   <i class="fa fa-cog multistate-switch-config"></i>
               </div>
           </div>
-          <div id="multiStateSwitchContainer_` + config.id + `" class="multistate-switch-wrapper multistate-switch-round">
-              <div id="multiStateSwitchBody_` + config.id + `"" class="multistate-switch-body">
-                  <div id="multiStateSwitchSliderWrapper_` + config.id + `" class="multistate-slider-wrapper">
-                      <div id="multiStateSwitchSlider_` + config.id + `" class="multistate-switch-slider multistate-switch-round multistate-switch-slider-` + config.id + `"></div>
+          <div id="multiStateSwitchContainer_${config.id}" class="multistate-switch-wrapper multistate-switch-round">
+              <div id="multiStateSwitchBody_${config.id}"" class="multistate-switch-body">
+                  <div id="multiStateSwitchSliderWrapper_${config.id}" class="multistate-slider-wrapper">
+                      <div id="multiStateSwitchSlider_${config.id}" class="multistate-switch-slider multistate-switch-round multistate-switch-slider-${config.id}"></div>
                   </div>
                   <!-- The radio buttons will be inserted here dynamically on the frontend side -->
               </div>
@@ -140,211 +145,187 @@ module.exports = function (RED) {
       </div>
       `;
 
-        return html;
-    }
+    return html;
+  }
 
-    function checkConfig(node, conf) {
-        if (!conf || !conf.hasOwnProperty("group")) {
-            node.error("No group has been specified");
-            return false;
+  function checkConfig(node, conf) {
+    if (!conf || !Object.prototype.hasOwnProperty.call(conf, 'group')) {
+      node.error('No group has been specified');
+      return false;
+    }
+    return true;
+  }
+
+  const tempDir = temp.mkdirSync();
+  const tempNodeModulesPath = `${tempDir}/node_modules/`;
+
+  function createVMOpt(node, kind) {
+    const opt = {
+      filename: `Function node${kind}:${node.id}${node.name ? ` [${node.name}]` : ''}`,
+      displayErrors: true,
+    };
+    return opt;
+  }
+
+  function updateErrorInfo(err) {
+    if (err.stack) {
+      const stack = err.stack.toString();
+      const m = /^([^:]+):([^:]+):(\d+).*/.exec(stack);
+      if (m) {
+        const line = parseInt(m[3], 10) - 1;
+        let kind = 'body:';
+        if (/setup/.exec(m[1])) {
+          kind = 'setup:';
         }
-        return true;
-    }
-
-    //functionx
-    var npm = require("npm");
-    var events = require("events");
-    var strip = require("strip-comments");
-    const { npmInstallTo } = require("npm-install-to");
-    var temp = require("temp").track();
-
-    var tempDir = temp.mkdirSync();
-    var tempNodeModulesPath = tempDir + "/node_modules/";
-
-    function createVMOpt(node, kind) {
-        var opt = {
-            filename: 'Function node' + kind + ':' + node.id + (node.name ? ' [' + node.name + ']' : ''), // filename for stack traces
-            displayErrors: true
-        };
-        return opt;
-    }
-
-    function updateErrorInfo(err) {
-        if (err.stack) {
-            var stack = err.stack.toString();
-            var m = /^([^:]+):([^:]+):(\d+).*/.exec(stack);
-            if (m) {
-                var line = parseInt(m[3]) - 1;
-                var kind = "body:";
-                if (/setup/.exec(m[1])) {
-                    kind = "setup:";
-                }
-                if (/cleanup/.exec(m[1])) {
-                    kind = "cleanup:";
-                }
-                err.message += " (" + kind + "line " + line + ")";
-            }
+        if (/cleanup/.exec(m[1])) {
+          kind = 'cleanup:';
         }
+        err.message += ` (${kind}line ${line})`;
+      }
     }
+  }
 
-    var ui = undefined;
+  let ui;
 
-    function OutletNode(config) {
-        try {
-            this.interval_id = null;
-            this.repeat = config.repeat * 1000;
-            var node = this;
-            node.name = config.name;
-            node.func = config.func;
-            node.outstandingTimers = [];
-            node.outstandingIntervals = [];
-            node.clearStatus = false;
+  function OutletNode(config) {
+    try {
+      this.interval_id = null;
+      this.repeat = config.repeat * 1000;
+      const node = this;
+      node.name = config.name;
+      node.func = config.func;
+      node.outstandingTimers = [];
+      node.outstandingIntervals = [];
+      node.clearStatus = false;
 
-            if (ui === undefined) {
-                ui = RED.require("node-red-dashboard")(RED);
+      if (ui === undefined) {
+        ui = RED.require('node-red-dashboard')(RED);
+      }
+
+      config.dark = false;
+      if (typeof ui.isDark === 'function') {
+        config.dark = ui.isDark();
+        config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
+      }
+
+      RED.nodes.createNode(this, config);
+
+      const sandbox = {
+        console,
+        util,
+        Buffer,
+        Date,
+        RED: {
+          util: RED.util,
+        },
+        __node__: {
+          id: node.id,
+          name: node.name,
+          log: (...args) => {
+            node.log(...args);
+          },
+          error: (...args) => {
+            node.error(...args);
+          },
+          warn: (...args) => {
+            node.warn(...args);
+          },
+          debug: (...args) => {
+            node.debug(...args);
+          },
+          trace: (...args) => {
+            node.trace(...args);
+          },
+          status: (...args) => {
+            node.clearStatus = true;
+            node.status(...args);
+          },
+        },
+        context: {
+          set: (...args) => {
+            node.context().set(...args);
+          },
+          get: (...args) => node.context().get(...args),
+          keys: (...args) => node.context().keys(...args),
+          get global() {
+            return node.context().global;
+          },
+          get flow() {
+            return node.context().flow;
+          },
+        },
+        flow: {
+          set: (...args) => {
+            node.context().flow.set(...args);
+          },
+          get: (...args) => node.context().flow.get(...args),
+          keys: (...args) => node.context().flow.keys(...args),
+        },
+        global: {
+          set: (...args) => {
+            node.context().global.set(...args);
+          },
+          get: (...args) => node.context().global.get(...args),
+          keys: (...args) => node.context().global.keys(...args),
+        },
+        env: {
+          get: (envVar) => {
+            const flow = node._flow;
+            return flow.getSetting(envVar);
+          },
+        },
+        setTimeout: (...args) => {
+          const func = args[0];
+          let timerId;
+          args[0] = () => {
+            sandbox.clearTimeout(timerId);
+            try {
+              func(...args);
+            } catch (err) {
+              node.error(err, {});
             }
-
-            config.dark = false;
-            if (typeof ui.isDark === "function") {
-                config.dark = ui.isDark();
-                config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
+          };
+          timerId = setTimeout(...args);
+          node.outstandingTimers.push(timerId);
+          return timerId;
+        },
+        clearTimeout: (id) => {
+          clearTimeout(id);
+          const index = node.outstandingTimers.indexOf(id);
+          if (index > -1) {
+            node.outstandingTimers.splice(index, 1);
+          }
+        },
+        setInterval: (...args) => {
+          const func = args[0];
+          args[0] = () => {
+            try {
+              func(...args);
+            } catch (err) {
+              node.error(err, {});
             }
+          };
+          const timerId = setInterval(...args);
+          node.outstandingIntervals.push(timerId);
+          return timerId;
+        },
+        clearInterval: (id) => {
+          clearInterval(id);
+          const index = node.outstandingIntervals.indexOf(id);
+          if (index > -1) {
+            node.outstandingIntervals.splice(index, 1);
+          }
+        },
+      };
 
-            RED.nodes.createNode(this, config);
+      if (Object.prototype.hasOwnProperty.call(util, 'promisify')) {
+        sandbox.setTimeout[util.promisify.custom] = (after, value) => new Promise((resolve) => {
+          sandbox.setTimeout(() => { resolve(value); }, after);
+        });
+        sandbox.promisify = util.promisify;
+      }
 
-            //functionx
-
-            var sandbox = {
-                console: console,
-                util: util,
-                Buffer: Buffer,
-                Date: Date,
-                RED: {
-                    util: RED.util
-                },
-                __node__: {
-                    id: node.id,
-                    name: node.name,
-                    log: function () {
-                        node.log.apply(node, arguments);
-                    },
-                    error: function () {
-                        node.error.apply(node, arguments);
-                    },
-                    warn: function () {
-                        node.warn.apply(node, arguments);
-                    },
-                    debug: function () {
-                        node.debug.apply(node, arguments);
-                    },
-                    trace: function () {
-                        node.trace.apply(node, arguments);
-                    },
-                    status: function () {
-                        node.clearStatus = true;
-                        node.status.apply(node, arguments);
-                    }
-                },
-                context: {
-                    set: function () {
-                        node.context().set.apply(node, arguments);
-                    },
-                    get: function () {
-                        return node.context().get.apply(node, arguments);
-                    },
-                    keys: function () {
-                        return node.context().keys.apply(node, arguments);
-                    },
-                    get global() {
-                        return node.context().global;
-                    },
-                    get flow() {
-                        return node.context().flow;
-                    }
-                },
-                flow: {
-                    set: function () {
-                        node.context().flow.set.apply(node, arguments);
-                    },
-                    get: function () {
-                        return node.context().flow.get.apply(node, arguments);
-                    },
-                    keys: function () {
-                        return node.context().flow.keys.apply(node, arguments);
-                    }
-                },
-                global: {
-                    set: function () {
-                        node.context().global.set.apply(node, arguments);
-                    },
-                    get: function () {
-                        return node.context().global.get.apply(node, arguments);
-                    },
-                    keys: function () {
-                        return node.context().global.keys.apply(node, arguments);
-                    }
-                },
-                env: {
-                    get: function (envVar) {
-                        var flow = node._flow;
-                        return flow.getSetting(envVar);
-                    }
-                },
-                setTimeout: function () {
-                    var func = arguments[0];
-                    var timerId;
-                    arguments[0] = function () {
-                        sandbox.clearTimeout(timerId);
-                        try {
-                            func.apply(node, arguments);
-                        } catch (err) {
-                            node.error(err, {});
-                        }
-                    };
-                    timerId = setTimeout.apply(node, arguments);
-                    node.outstandingTimers.push(timerId);
-                    return timerId;
-                },
-                clearTimeout: function (id) {
-                    clearTimeout(id);
-                    var index = node.outstandingTimers.indexOf(id);
-                    if (index > -1) {
-                        node.outstandingTimers.splice(index, 1);
-                    }
-                },
-                setInterval: function () {
-                    var func = arguments[0];
-                    var timerId;
-                    arguments[0] = function () {
-                        try {
-                            func.apply(node, arguments);
-                        } catch (err) {
-                            node.error(err, {});
-                        }
-                    };
-                    timerId = setInterval.apply(node, arguments);
-                    node.outstandingIntervals.push(timerId);
-                    return timerId;
-                },
-                clearInterval: function (id) {
-                    clearInterval(id);
-                    var index = node.outstandingIntervals.indexOf(id);
-                    if (index > -1) {
-                        node.outstandingIntervals.splice(index, 1);
-                    }
-                }
-            };
-
-            if (util.hasOwnProperty('promisify')) {
-                sandbox.setTimeout[util.promisify.custom] = function (after, value) {
-                    return new Promise(function (resolve, reject) {
-                        sandbox.setTimeout(function () { resolve(value); }, after);
-                    });
-                };
-                sandbox.promisify = util.promisify;
-            }
-
-            var funcText = `
+      const funcText = `
                     (function() {
                         var node = {
                             id:__node__.id,
@@ -356,329 +337,339 @@ module.exports = function (RED) {
                             trace:__node__.trace,
                             status:__node__.status,
                         };
-                        `+ node.func + `
+                        ${node.func}
                     })(__funcSend__);`;
 
-            var requiredModules = [];
-            var installedModules = {};
-            var npmModules = {};
-            const RE_SCOPED = /^(@[^/]+\/[^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
-            const RE_NORMAL = /^([^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
-            var pattern = /require\(([^)]+)\)/g
-            var functionTextwoComments = strip(funcText);
-            var result = pattern.exec(functionTextwoComments);
+      const requiredModules = [];
+      const installedModules = {};
+      const npmModules = {};
+      const RE_SCOPED = /^(@[^/]+\/[^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
+      const RE_NORMAL = /^([^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
+      const pattern = /require\(([^)]+)\)/g;
+      const functionTextwoComments = strip(funcText);
+      let result = pattern.exec(functionTextwoComments);
 
-            while (result !== null) {
-                var module_name = result[1];
-                module_name = module_name.replace(/'/g, "");
-                module_name = module_name.replace(/"/g, "");
-                var matched = module_name.charAt(0) === "@" ? module_name.match(RE_SCOPED) : module_name.match(RE_NORMAL);
-                var moduleNameOnly = matched[1];
-                var modulePath = matched[2] || '';
-                var moduleVersion = matched[3] || '';
-                requiredModules.push({ name: moduleNameOnly, path: modulePath, version: moduleVersion, fullName: module_name });
-                result = pattern.exec(functionTextwoComments);
-            }
-
-            var setStatus = function (errors, itemsProcessed) {
-                if (itemsProcessed === requiredModules.length) {
-                    if (errors.length === 0) {
-                        node.status({ fill: "green", shape: "dot", text: "ready" });
-                        setTimeout(node.status.bind(node, {}), 5000);
-                    }
-                    else {
-                        var msg = errors.length.toString() + " package(s) installations failed.";
-                        errors.forEach(function (e) {
-                            msg = msg + "\r\n" + e.moduleName;
-                        });
-                        node.status({ fill: "red", shape: "dot", text: msg });
-                    }
-                }
-            };
-
-            var errors = [];
-            var itemsProcessed = 0;
-
-            requiredModules.forEach(function (npmModule) {
-                var moduleFullPath = npmModule.path === '' ? tempNodeModulesPath + npmModule.name : tempNodeModulesPath + npmModule.path;
-                if (installedModules[npmModule.fullName]) {
-                    npmModules[npmModule.fullName] = require(moduleFullPath);
-                    itemsProcessed++;
-                }
-                else {
-                    node.status({ fill: "blue", shape: "dot", text: "installing packages" });
-                    npm.load({ prefix: tempDir, progress: false, loglevel: 'silent' }, function (er) {
-                        if (er) {
-                            errors.push({ moduleName: npmModule.fullName, error: er });
-                            itemsProcessed++;
-                            setStatus(errors, itemsProcessed);
-                            return node.error(er);
-                        }
-                        npmInstallTo(tempDir, [npmModule.fullName]).then(() => {
-                            try {
-                                npmModules[npmModule.fullName] = require(moduleFullPath);
-                                node.log('Downloaded and installed NPM module: ' + npmModule.fullName);
-                                installedModules[npmModule.fullName] = true;
-                            } catch (err) {
-                                installedModules[npmModule.fullName] = false;
-                                errors.push({ moduleName: npmModule.fullName, error: err });
-                                node.error(err);
-                            }
-                        }).catch(er => {
-                            installedModules[npmModule.fullName] = false;
-                            errors.push({ moduleName: npmModule.fullName, error: er });
-                            setStatus(errors, itemsProcessed);
-                            return node.error(er);
-                        }).then(() => {
-                            itemsProcessed++;
-                            setStatus(errors, itemsProcessed);
-                        })
-                    })
-                }
-            }, this);
-
-            // var checkPackageLoad = function () {
-            //     var downloadProgressResult = null;
-            //     if (requiredModules.length != 0) {
-            //         requiredModules.forEach(function (npmModule) {
-            //             if (!(installedModules.hasOwnProperty(npmModule.fullName))) {
-            //                 downloadProgressResult = false;
-            //             } else {
-            //                 downloadProgressResult = (downloadProgressResult !== null) ? (downloadProgressResult && true) : true
-            //             }
-            //         }, this);
-            //     } else {
-            //         downloadProgressResult = true;
-            //     }
-            //     return downloadProgressResult;
-            // };
-
-            var requireOverload = function (moduleName) {
-                try {
-                    return npmModules[moduleName];
-                } catch (err) {
-                    node.error("Cannot find module : " + moduleName);
-                }
-            };
-
-            sandbox.__npmModules__ = npmModules;
-            sandbox.require = requireOverload;
-
-            var context = vm.createContext(sandbox);
-
-            if (node.func && node.func !== '') {
-                var funcOpt = createVMOpt(node, '');
-                var funcScript = new vm.Script(funcText, funcOpt);
-                context.__funcSend__ = function () { return; };
-            }
-
-            node.repeaterSetup = function (stateField) {
-                if (this.repeat && !isNaN(this.repeat) && this.repeat > 0 && funcScript !== '' && this.interval_id === null) {
-                    this.interval_id = setInterval(function () {
-                        var newMsg = {};
-                        var newValue = funcScript.runInContext(context, funcOpt);
-                        RED.util.setMessageProperty(newMsg, stateField, newValue, true);
-                        node.send(newMsg);
-                    }, this.repeat);
-                    node.outstandingIntervals.push(this.interval_id);
-                }
-            }
-
-            node.cancelRepeater = function () {
-                clearInterval(this.interval_id);
-                this.interval_id = null;
-            }
-
-            config.initOpt = node.context().get('state');
-            if (config.initOpt === undefined) {
-                config.initOpt = config.options[0];
-            }
-            if (config.initOpt.valueType === 'func' && node.func && node.func !== '') {
-                node.repeaterSetup(config.stateField);
-            }
-
-            if (checkConfig(node, config)) {
-                var html = HTML(config);
-                var done = ui.addWidget({
-                    node: node,
-                    group: config.group,
-                    order: config.order,
-                    width: config.width,
-                    height: config.height,
-                    format: html,
-                    templateScope: "local",
-                    emitOnlyNewValues: false,
-                    forwardInputMessages: false,
-                    storeFrontEndInputAsState: true,
-                    convertBack: function (value) {
-                        return value;
-                    },
-                    beforeEmit: function (msg, value) {
-                        if (msg) {
-                            var newMsg = {};
-                            newMsg.socketid = msg.socketid;
-                            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
-                            newMsg.input = RED.util.getMessageProperty(msg, config.inputField || 'input');
-                            return { msg: newMsg };
-                        }
-                    },
-                    beforeSend: function (msg, orig) {
-                        if (orig) {
-                            var newMsg = {};
-                            var newValue = null;
-                            if (orig.msg.option.valueType === 'func') {
-                                if (node.func && node.func !== '') {
-                                    newValue = funcScript.runInContext(context, funcOpt);
-                                    RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
-                                    node.repeaterSetup(config.stateField);
-                                }
-                            } else {
-                                node.cancelRepeater();
-                                newValue = orig.msg.state;
-                                RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
-                            }
-                            if (config.storestate) {
-                                node.context().set('state', orig.msg.option)
-                            };
-                            return newMsg;
-                        }
-                    },
-                    initController: function ($scope, events) {
-                        $scope.flag = true;
-                        $scope.init = function (config) {
-                            $scope.config = config;
-                            $scope.containerDiv = $("#multiStateSwitchContainer_" + config.id)[0];
-                            $scope.sliderDivElement = $("#multiStateSwitchSlider_" + config.id)[0];
-                            $scope.sliderWrapperElement = $("#multiStateSwitchSliderWrapper_" + config.id)[0];
-                            // Get a reference to the sub-DIV element
-                            var toggleRadioDiv = $scope.containerDiv.firstElementChild;
-                            // Create all the required  button elements
-                            config.options.forEach(function (option, index) {
-                                var divElement = document.createElement("div");
-                                divElement.setAttribute("class", "multistate-switch-button multistate-switch-button-" + config.id);
-                                divElement.setAttribute("id", "mstbtn_" + config.id + "_" + index)
-                                divElement.innerHTML = option.label;
-                                divElement.addEventListener("click", function () {
-                                    switchStateChanged(option.value, true);
-                                });
-                                toggleRadioDiv.appendChild(divElement);
-                            });
-                            // Make sure the initial element gets the correct color
-                            switchStateChanged(config.initOpt.value, false);
-                        };
-
-                        $scope.$watch('msg', function (msg) {
-                            // Ignore undefined messages.
-                            if (!msg) {
-                                return;
-                            }
-                            if (msg.state !== undefined) {
-                                switchStateChanged(msg.state.toString(), false);
-                            }
-                            if (msg.input !== undefined) {
-                                $scope.inputState = msg.input;
-                            }
-                        });
-
-                        function txtClassToStandOut(bgColor, light, dark) {
-                            var color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
-                            var r = parseInt(color.substring(0, 2), 16);
-                            var g = parseInt(color.substring(2, 4), 16);
-                            var b = parseInt(color.substring(4, 6), 16);
-                            var uicolors = [r / 255, g / 255, b / 255];
-                            var c = uicolors.map((col) => {
-                                if (col <= 0.03928) {
-                                    return col / 12.92;
-                                }
-                                return Math.pow((col + 0.055) / 1.055, 2.4);
-                            });
-                            var L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);
-                            if ($scope.config.dark) {
-                                return (L > 0.35) ? dark : light;
-                            }
-                            return (L > 0.35) ? light : dark;
-                        }
-
-                        function switchStateChanged(newValue, sendMsg) {
-                            var divIndex = -1;
-                            var newMsg = {};
-                            // Try to find an option with a value identical to the specified value
-                            // For every button be sure that button exists and change mouse cursor and pointer-events
-                            $scope.config.options.forEach(function (option, index) {
-                                if ($("#mstbtn_" + $scope.config.id + "_" + index).length) {
-                                    $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "pointer", "pointer-events": "auto" })
-                                    $("#mstbtn_" + $scope.config.id + "_" + index).removeClass("light dark")
-                                    if (option.value == newValue) {
-                                        // selected button inactive                                                                                                                     
-                                        $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "default", "pointer-events": "none" })
-                                        // ensure the button text stand out
-                                        var color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor
-                                        $("#mstbtn_" + $scope.config.id + "_" + index).addClass(txtClassToStandOut(color, "light", "dark"))
-                                        divIndex = index;
-                                    }
-                                }
-                            });
-                            if (divIndex >= 0) {
-                                var percentage = "0%";
-                                newMsg.option = $scope.config.options[divIndex];
-                                if ($scope.config.options.length > 0 && divIndex >= 0) {
-                                    percentage = (100 / $scope.config.options.length) * divIndex;
-                                    $scope.sliderDivElement.style.left = percentage + "%";
-                                    if ($scope.config.useThemeColors != true) {
-                                        $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
-                                    }
-                                }
-                                if ($scope.config.options[divIndex].valueType === "str") {
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "num") {
-                                    newValue = Number(newValue);
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "bool") {
-                                    if (newValue === 'true') {
-                                        newValue = true;
-                                    } else {
-                                        newValue = false;
-                                    }
-                                    newMsg.state = newValue;
-                                }
-                                if ($scope.config.options[divIndex].valueType === "func") {
-                                    newMsg.state = newValue;
-                                }
-                                if (sendMsg) {
-                                    $scope.send(newMsg);
-                                }
-                            } else {
-                                console.log("No radio button has value '" + newValue + "'");
-                            }
-                        }
-                    }
-                });
-            }
-
-        } catch (e) {
-            node.error(e);
-            console.trace(e);
-            updateErrorInfo(err);
-        }
-
-        node.on("close", function () {
-            while (node.outstandingTimers.length > 0) {
-                clearTimeout(node.outstandingTimers.pop());
-            }
-            while (node.outstandingIntervals.length > 0) {
-                clearInterval(node.outstandingIntervals.pop());
-            }
-            if (node.clearStatus) {
-                node.status({});
-            }
-            if (done) {
-                done();
-            }
+      while (result !== null) {
+        let moduleName = result[1];
+        moduleName = moduleName.replace(/'/g, '');
+        moduleName = moduleName.replace(/"/g, '');
+        const matched = moduleName.charAt(0) === '@' ? moduleName.match(RE_SCOPED) : moduleName.match(RE_NORMAL);
+        const moduleNameOnly = matched[1];
+        const modulePath = matched[2] || '';
+        const moduleVersion = matched[3] || '';
+        requiredModules.push({
+          name: moduleNameOnly,
+          path: modulePath,
+          version: moduleVersion,
+          fullName: moduleName,
         });
+        result = pattern.exec(functionTextwoComments);
+      }
+
+      const setStatus = (errors, itemsProcessed) => {
+        if (itemsProcessed === requiredModules.length) {
+          if (errors.length === 0) {
+            node.status({ fill: 'green', shape: 'dot', text: 'ready' });
+            setTimeout(node.status.bind(node, {}), 5000);
+          }
+          else {
+            let msg = `${errors.length.toString()} package(s) installations failed.`;
+            errors.forEach((e) => {
+              msg = `${msg}\r\n${e.moduleName}`;
+            });
+            node.status({ fill: 'red', shape: 'dot', text: msg });
+          }
+        }
+      };
+
+      const errors = [];
+      let itemsProcessed = 0;
+
+      requiredModules.forEach((npmModule) => {
+        const moduleFullPath = npmModule.path === '' ? tempNodeModulesPath + npmModule.name : tempNodeModulesPath + npmModule.path;
+        if (installedModules[npmModule.fullName]) {
+          npmModules[npmModule.fullName] = require(moduleFullPath);
+          itemsProcessed += 1;
+        }
+        else {
+          node.status({ fill: 'blue', shape: 'dot', text: 'installing packages' });
+          npm.load({ prefix: tempDir, progress: false, loglevel: 'silent' }, (er) => {
+            if (er) {
+              errors.push({ moduleName: npmModule.fullName, error: er });
+              itemsProcessed += 1;
+              setStatus(errors, itemsProcessed);
+              return node.error(er);
+            }
+            npmInstallTo(tempDir, [npmModule.fullName]).then(() => {
+              try {
+                npmModules[npmModule.fullName] = require(moduleFullPath);
+                node.log(`Downloaded and installed NPM module: ${npmModule.fullName}`);
+                installedModules[npmModule.fullName] = true;
+              } catch (err) {
+                installedModules[npmModule.fullName] = false;
+                errors.push({ moduleName: npmModule.fullName, error: err });
+                node.error(err);
+              }
+            }).catch((err) => {
+              installedModules[npmModule.fullName] = false;
+              errors.push({ moduleName: npmModule.fullName, error: er });
+              setStatus(errors, itemsProcessed);
+              return node.error(err);
+            }).then(() => {
+              itemsProcessed += 1;
+              setStatus(errors, itemsProcessed);
+            });
+          });
+        }
+      }, this);
+
+      // var checkPackageLoad = function () {
+      //     var downloadProgressResult = null;
+      //     if (requiredModules.length != 0) {
+      //         requiredModules.forEach(function (npmModule) {
+      //             if (!(installedModules.hasOwnProperty(npmModule.fullName))) {
+      //                 downloadProgressResult = false;
+      //             } else {
+      //                 downloadProgressResult = (downloadProgressResult !== null) ? (downloadProgressResult && true) : true
+      //             }
+      //         }, this);
+      //     } else {
+      //         downloadProgressResult = true;
+      //     }
+      //     return downloadProgressResult;
+      // };
+
+      const requireOverload = (moduleName) => {
+        try {
+          return npmModules[moduleName];
+        } catch (err) {
+          node.error(`Cannot find module : ${moduleName}`);
+        }
+      };
+
+      sandbox.__npmModules__ = npmModules;
+      sandbox.require = requireOverload;
+
+      const context = vm.createContext(sandbox);
+      let funcOpt;
+      let funcScript;
+
+      if (node.func && node.func !== '') {
+        funcOpt = createVMOpt(node, '');
+        funcScript = new vm.Script(funcText, funcOpt);
+        context.__funcSend__ = () => {};
+      }
+
+      node.repeaterSetup = (stateField) => {
+        if (this.repeat && !Number.isNaN(this.repeat) && this.repeat > 0 && funcScript !== '' && this.interval_id === null) {
+          this.interval_id = setInterval(() => {
+            const newMsg = {};
+            const newValue = funcScript.runInContext(context, funcOpt);
+            RED.util.setMessageProperty(newMsg, stateField, newValue, true);
+            node.send(newMsg);
+          }, this.repeat);
+          node.outstandingIntervals.push(this.interval_id);
+        }
+      };
+
+      node.cancelRepeater = () => {
+        clearInterval(this.interval_id);
+        this.interval_id = null;
+      };
+
+      config.initOpt = node.context().get('state');
+      if (config.initOpt === undefined) {
+        config.initOpt = config.options[0];
+      }
+
+      if (config.initOpt.valueType === 'func' && node.func && node.func !== '') {
+        node.repeaterSetup(config.stateField);
+      }
+
+      if (checkConfig(node, config)) {
+        const html = HTML(config);
+        const done = ui.addWidget({
+          node,
+          group: config.group,
+          order: config.order,
+          width: config.width,
+          height: config.height,
+          format: html,
+          templateScope: 'local',
+          emitOnlyNewValues: false,
+          forwardInputMessages: false,
+          storeFrontEndInputAsState: true,
+          convertBack(value) {
+            return value;
+          },
+          beforeEmit(msg) {
+            if (msg) {
+              const newMsg = {};
+              newMsg.socketid = msg.socketid;
+              newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
+              newMsg.input = RED.util.getMessageProperty(msg, config.inputField || 'input');
+              return { msg: newMsg };
+            }
+            return msg;
+          },
+          beforeSend(msg, orig) {
+            if (orig) {
+              const newMsg = {};
+              let newValue = null;
+              if (orig.msg.option.valueType === 'func') {
+                if (node.func && node.func !== '') {
+                  newValue = funcScript.runInContext(context, funcOpt);
+                  RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
+                  node.repeaterSetup(config.stateField);
+                }
+              } else {
+                node.cancelRepeater();
+                newValue = orig.msg.state;
+                RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
+              }
+              if (config.storestate) {
+                node.context().set('state', orig.msg.option);
+              }
+              return newMsg;
+            }
+            return msg;
+          },
+          initController: ($scope, events) => {
+            $scope.flag = true;
+            $scope.init = (config) => {
+              $scope.config = config;
+              $scope.containerDiv = $("#multiStateSwitchContainer_" + config.id)[0];
+              $scope.sliderDivElement = $("#multiStateSwitchSlider_" + config.id)[0];
+              $scope.sliderWrapperElement = $("#multiStateSwitchSliderWrapper_" + config.id)[0];
+              // Get a reference to the sub-DIV element
+              var toggleRadioDiv = $scope.containerDiv.firstElementChild;
+              // Create all the required  button elements
+              config.options.forEach(function (option, index) {
+                var divElement = document.createElement("div");
+                divElement.setAttribute("class", "multistate-switch-button multistate-switch-button-" + config.id);
+                divElement.setAttribute("id", "mstbtn_" + config.id + "_" + index)
+                divElement.innerHTML = option.label;
+                divElement.addEventListener("click", function () {
+                  switchStateChanged(option.value, true);
+                });
+                toggleRadioDiv.appendChild(divElement);
+              });
+              // Make sure the initial element gets the correct color
+              switchStateChanged(config.initOpt.value, false);
+            };
+
+            $scope.$watch('msg', function (msg) {
+              // Ignore undefined messages.
+              if (!msg) {
+                return;
+              }
+              if (msg.state !== undefined) {
+                switchStateChanged(msg.state.toString(), false);
+              }
+              if (msg.input !== undefined) {
+                $scope.inputState = msg.input;
+              }
+            });
+
+            function txtClassToStandOut(bgColor, light, dark) {
+              var color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
+              var r = parseInt(color.substring(0, 2), 16);
+              var g = parseInt(color.substring(2, 4), 16);
+              var b = parseInt(color.substring(4, 6), 16);
+              var uicolors = [r / 255, g / 255, b / 255];
+              var c = uicolors.map((col) => {
+                if (col <= 0.03928) {
+                  return col / 12.92;
+                }
+                return Math.pow((col + 0.055) / 1.055, 2.4);
+              });
+              var L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);
+              if ($scope.config.dark) {
+                return (L > 0.35) ? dark : light;
+              }
+              return (L > 0.35) ? light : dark;
+            }
+
+            function switchStateChanged(newValue, sendMsg) {
+              var divIndex = -1;
+              var newMsg = {};
+              // Try to find an option with a value identical to the specified value
+              // For every button be sure that button exists and change mouse cursor and pointer-events
+              $scope.config.options.forEach(function (option, index) {
+                if ($("#mstbtn_" + $scope.config.id + "_" + index).length) {
+                  $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "pointer", "pointer-events": "auto" })
+                  $("#mstbtn_" + $scope.config.id + "_" + index).removeClass("light dark")
+                  if (option.value == newValue) {
+                    // selected button inactive                                                                                                                     
+                    $("#mstbtn_" + $scope.config.id + "_" + index).css({ "cursor": "default", "pointer-events": "none" })
+                    // ensure the button text stand out
+                    var color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor
+                    $("#mstbtn_" + $scope.config.id + "_" + index).addClass(txtClassToStandOut(color, "light", "dark"))
+                    divIndex = index;
+                  }
+                }
+              });
+              if (divIndex >= 0) {
+                var percentage = "0%";
+                newMsg.option = $scope.config.options[divIndex];
+                if ($scope.config.options.length > 0 && divIndex >= 0) {
+                  percentage = (100 / $scope.config.options.length) * divIndex;
+                  $scope.sliderDivElement.style.left = percentage + "%";
+                  if ($scope.config.useThemeColors != true) {
+                    $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
+                  }
+                }
+                if ($scope.config.options[divIndex].valueType === "str") {
+                  newMsg.state = newValue;
+                }
+                if ($scope.config.options[divIndex].valueType === "num") {
+                  newValue = Number(newValue);
+                  newMsg.state = newValue;
+                }
+                if ($scope.config.options[divIndex].valueType === "bool") {
+                  if (newValue === 'true') {
+                    newValue = true;
+                  } else {
+                    newValue = false;
+                  }
+                  newMsg.state = newValue;
+                }
+                if ($scope.config.options[divIndex].valueType === "func") {
+                  newMsg.state = newValue;
+                }
+                if (sendMsg) {
+                  $scope.send(newMsg);
+                }
+              } else {
+                console.log("No radio button has value '" + newValue + "'");
+              }
+            }
+          }
+        });
+      }
+
+    } catch (e) {
+      node.error(e);
+      console.trace(e);
+      updateErrorInfo(err);
     }
 
-    RED.nodes.registerType("outlet", OutletNode);
-    RED.library.register("functions");
+    node.on("close", function () {
+      while (node.outstandingTimers.length > 0) {
+        clearTimeout(node.outstandingTimers.pop());
+      }
+      while (node.outstandingIntervals.length > 0) {
+        clearInterval(node.outstandingIntervals.pop());
+      }
+      if (node.clearStatus) {
+        node.status({});
+      }
+      if (done) {
+        done();
+      }
+    });
+  }
+
+  RED.nodes.registerType("outlet", OutletNode);
+  RED.library.register("functions");
 }
