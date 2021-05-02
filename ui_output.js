@@ -16,10 +16,6 @@
  * */
 const util = require('util');
 const vm = require('vm');
-const npm = require('npm');
-const strip = require('strip-comments');
-const { npmInstallTo } = require('npm-install-to');
-const temp = require('temp').track();
 
 module.exports = (RED) => {
   function HTML(config) {
@@ -28,13 +24,13 @@ module.exports = (RED) => {
     const configAsJson = JSON.stringify(config);
     const html = String.raw`
       <style>
-          .multistate-switch-container{
+          .ui-output-container{
               display: block;
               width:100%;
               margin:auto;
               padding: 3px;
           }
-          .multistate-switch-header{
+          .ui-output-header{
               display: flex;
                 justify-content: space-between;
               font-size: 14px;
@@ -45,15 +41,15 @@ module.exports = (RED) => {
               padding-left: 2px;
               padding-right: 2px;
           }
-          .multistate-switch-config{
+          .ui-output-config{
               color: #999;
               cursor: pointer;
           }
-          .multistate-switch-wrapper.disabled{
+          .ui-output-wrapper.disabled{
               border-color:gray;
               border-style:dashed;
           }
-          .multistate-switch-wrapper{
+          .ui-output-wrapper{
               border:1px solid var(--nr-dashboard-widgetColor);
               display: flex;
               flex-flow: column nowrap;
@@ -68,29 +64,29 @@ module.exports = (RED) => {
               width:100%;
               height: 1.55em;
           }
-          .multistate-slider-wrapper.disabled{
+          .ui-output-slider-wrapper.disabled{
               opacity:0.5;
           }
-          .multistate-slider-wrapper{
+          .ui-output-slider-wrapper{
               height: 1em;
               padding-top: 0.25em;
               padding-bottom: 0.25em;
               z-index:0
           }
-          .multistate-switch-body.disabled{
+          .ui-output-body.disabled{
               color:gray;
               pointer-events:none; 
           }
-          .multistate-switch-body{
+          .ui-output-body{
               pointer-events:auto;
               display: inline-flex;
               justify-content: flex-start;
               width: 100%;
           }
-          .multistate-switch-slider-${config.id}{
+          .ui-output-slider-${config.id}{
               width: calc((100% - (${config.options.length} * 0.2em)) / ${config.options.length});
           }
-          .multistate-switch-slider{                
+          .ui-output-slider{                
               background-color: var(--nr-dashboard-widgetColor);
               position: absolute;
               height: 1.2em;
@@ -99,19 +95,19 @@ module.exports = (RED) => {
               left: 0%;
               z-index:0;
           }
-          .multistate-switch-button-${config.id}{
+          .ui-output-button-${config.id}{
               width:calc(100% / ${config.options.length}); 
           }
-          .multistate-switch-button.disabled{
+          .ui-output-button.disabled{
               pointer-events:none !important;
           }
-          .multistate-switch-button.dark{
-              color:var(--nr-dashboard-widgetBgndColor)
+          .ui-output-button.dark{
+              color:var(--nr-dashboard-widgetBgndColor);
           }
-          .multistate-switch-button.light{
-              color:var(--nr-dashboard-widgetTextColor)
+          .ui-output-button.light{
+              color:var(--nr-dashboard-widgetTextColor);
           }
-          .multistate-switch-button{
+          .ui-output-button{
              text-align:center;
              z-index:1;
              outline: none;
@@ -120,22 +116,25 @@ module.exports = (RED) => {
              line-height: 1.2em;
              transition: color 0.5s ease;
           }
-          .multistate-switch-round{
+          .ui-output-round{
               border-radius: 0.8em;
           }
+          .ui-output-input{
+             color: var(--nr-dashboard-widgetColor);
+          }
       </style>
-      <div class="multistate-switch-container" ng-init='init(${configAsJson})'>
-          <div ng-if="${config.label !== ''}" class="multistate-switch-header">
+      <div class="ui-output-container" ng-init='init(${configAsJson})'>
+          <div ng-if="${config.label !== ''}" class="ui-output-header">
               <div>${config.label}</div>
               <div>
-                  <span>{{inputState}}</span>
-                  <i class="fa fa-cog multistate-switch-config"></i>
+                  <span class="ui-output-input">{{inputState}}</span>
+                  <i class="fa fa-cog ui-output-config"></i>
               </div>
           </div>
-          <div id="multiStateSwitchContainer_${config.id}" class="multistate-switch-wrapper multistate-switch-round">
-              <div id="multiStateSwitchBody_${config.id}"" class="multistate-switch-body">
-                  <div id="multiStateSwitchSliderWrapper_${config.id}" class="multistate-slider-wrapper">
-                      <div id="multiStateSwitchSlider_${config.id}" class="multistate-switch-slider multistate-switch-round multistate-switch-slider-${config.id}"></div>
+          <div id="uiOutputContainer_${config.id}" class="ui-output-wrapper ui-output-round">
+              <div id="uiOutputBody_${config.id}"" class="ui-output-body">
+                  <div id="uiOutputSliderWrapper_${config.id}" class="ui-output-slider-wrapper">
+                      <div id="uiOutputSlider_${config.id}" class="ui-output-slider ui-output-round ui-output-slider-${config.id}"></div>
                   </div>
                   <!-- The radio buttons will be inserted here dynamically on the frontend side -->
               </div>
@@ -180,9 +179,20 @@ module.exports = (RED) => {
     const node = this;
     node.name = config.name;
     node.func = config.func;
+    node.libs = config.libs || [];
     node.outstandingTimers = [];
     node.outstandingIntervals = [];
     node.clearStatus = false;
+
+    if (RED.settings.functionExternalModules !== true && node.libs.length > 0) {
+      throw new Error(RED._("function.error.externalModuleNotAllowed"));
+    }
+
+    var handleNodeDoneCall = true;
+
+    if (/node\.done\s*\(\s*\)/.test(node.func)) {
+      handleNodeDoneCall = false;
+    }
 
     try {
       if (ui === undefined) {
@@ -312,6 +322,36 @@ module.exports = (RED) => {
         sandbox.promisify = util.promisify;
       }
 
+      if (node.hasOwnProperty("libs")) {
+        let moduleErrors = false;
+        var modules = node.libs;
+        modules.forEach(module => {
+          var vname = module.hasOwnProperty("var") ? module.var : null;
+          if (vname && (vname !== "")) {
+            if (sandbox.hasOwnProperty(vname) || vname === 'node') {
+              node.error(RED._("function.error.moduleNameError", { name: vname }))
+              moduleErrors = true;
+              return;
+            }
+            sandbox[vname] = null;
+            try {
+              var spec = module.module;
+              if (spec && (spec !== "")) {
+                var lib = RED.require(module.module);
+                sandbox[vname] = lib;
+              }
+            } catch (e) {
+              //TODO: NLS error message
+              node.error(RED._("function.error.moduleLoadError", { module: module.spec, error: e.toString() }))
+              moduleErrors = true;
+            }
+          }
+        });
+        if (moduleErrors) {
+          throw new Error(RED._("function.error.externalModuleLoadError"));
+        }
+      }
+
       const funcText = `
                     (function() {
                         var node = {
@@ -323,119 +363,9 @@ module.exports = (RED) => {
                             debug:__node__.debug,
                             trace:__node__.trace,
                             status:__node__.status,
-                        };
-                        ${node.func}
+                        };\n
+                        ${node.func}\n
                     })(__funcSend__);`;
-
-      const tempDir = temp.mkdirSync();
-      const tempNodeModulesPath = `${tempDir}/node_modules/`;
-      const requiredModules = [];
-      const installedModules = {};
-      const npmModules = {};
-      const RE_SCOPED = /^(@[^/]+\/[^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
-      const RE_NORMAL = /^([^/@]+)(?:\/([^@]+))?(?:@([\s\S]+))?/;
-      const pattern = /require\(([^)]+)\)/g;
-      const functionTextwoComments = strip(funcText);
-      let result = pattern.exec(functionTextwoComments);
-
-      while (result !== null) {
-        let moduleName = result[1];
-        moduleName = moduleName.replace(/'/g, '');
-        moduleName = moduleName.replace(/"/g, '');
-        const matched = moduleName.charAt(0) === '@' ? moduleName.match(RE_SCOPED) : moduleName.match(RE_NORMAL);
-        const moduleNameOnly = matched[1];
-        const modulePath = matched[2] || '';
-        const moduleVersion = matched[3] || '';
-        requiredModules.push({
-          name: moduleNameOnly,
-          path: modulePath,
-          version: moduleVersion,
-          fullName: moduleName,
-        });
-        result = pattern.exec(functionTextwoComments);
-      }
-
-      const setStatus = (errors, itemsProcessed) => {
-        if (itemsProcessed === requiredModules.length) {
-          if (errors.length === 0) {
-            node.status({ fill: 'green', shape: 'dot', text: 'ready' });
-            setTimeout(node.status.bind(node, {}), 5000);
-          } else {
-            let msg = `${errors.length.toString()} package(s) installations failed.`;
-            errors.forEach((e) => {
-              msg = `${msg}\r\n${e.moduleName}`;
-            });
-            node.status({ fill: 'red', shape: 'dot', text: msg });
-          }
-        }
-      };
-
-      const errors = [];
-      let itemsProcessed = 0;
-
-      requiredModules.forEach((npmModule) => {
-        const moduleFullPath = npmModule.path === '' ? tempNodeModulesPath + npmModule.name : tempNodeModulesPath + npmModule.path;
-        if (installedModules[npmModule.fullName]) {
-          npmModules[npmModule.fullName] = require(moduleFullPath);
-          itemsProcessed += 1;
-        } else {
-          node.status({ fill: 'blue', shape: 'dot', text: 'installing packages' });
-          npm.load({ prefix: tempDir, progress: false, loglevel: 'silent' }, (er) => {
-            if (er) {
-              errors.push({ moduleName: npmModule.fullName, error: er });
-              itemsProcessed += 1;
-              setStatus(errors, itemsProcessed);
-              return node.error(er);
-            }
-            npmInstallTo(tempDir, [npmModule.fullName]).then(() => {
-              try {
-                npmModules[npmModule.fullName] = require(moduleFullPath);
-                node.log(`Downloaded and installed NPM module: ${npmModule.fullName}`);
-                installedModules[npmModule.fullName] = true;
-              } catch (err) {
-                installedModules[npmModule.fullName] = false;
-                errors.push({ moduleName: npmModule.fullName, error: err });
-                node.error(err);
-              }
-            }).catch((err) => {
-              installedModules[npmModule.fullName] = false;
-              errors.push({ moduleName: npmModule.fullName, error: er });
-              setStatus(errors, itemsProcessed);
-              return node.error(err);
-            }).then(() => {
-              itemsProcessed += 1;
-              setStatus(errors, itemsProcessed);
-            });
-          });
-        }
-      }, this);
-
-      // var checkPackageLoad = function () {
-      //     var downloadProgressResult = null;
-      //     if (requiredModules.length != 0) {
-      //         requiredModules.forEach(function (npmModule) {
-      //             if (!(installedModules.hasOwnProperty(npmModule.fullName))) {
-      //                 downloadProgressResult = false;
-      //             } else {
-      //                 downloadProgressResult = (downloadProgressResult !== null) ? (downloadProgressResult && true) : true
-      //             }
-      //         }, this);
-      //     } else {
-      //         downloadProgressResult = true;
-      //     }
-      //     return downloadProgressResult;
-      // };
-
-      const requireOverload = (moduleName) => {
-        try {
-          return npmModules[moduleName];
-        } catch (err) {
-          node.error(`Cannot find module : ${moduleName}`);
-        }
-      };
-
-      sandbox.__npmModules__ = npmModules;
-      sandbox.require = requireOverload;
 
       const context = vm.createContext(sandbox);
       let funcOpt;
@@ -444,7 +374,7 @@ module.exports = (RED) => {
       if (node.func && node.func !== '') {
         funcOpt = createVMOpt(node, '');
         funcScript = new vm.Script(funcText, funcOpt);
-        context.__funcSend__ = () => {};
+        context.__funcSend__ = () => { };
       }
 
       node.repeaterSetup = (stateField) => {
@@ -454,6 +384,7 @@ module.exports = (RED) => {
             const newValue = funcScript.runInContext(context, funcOpt);
             RED.util.setMessageProperty(newMsg, stateField, newValue, true);
             node.send(newMsg);
+            node.emit('input', newMsg);
           }, this.repeat);
           node.outstandingIntervals.push(this.interval_id);
         }
@@ -482,7 +413,7 @@ module.exports = (RED) => {
         height: config.height,
         format: html,
         templateScope: 'local',
-        emitOnlyNewValues: false,
+        emitOnlyNewValues: config.unique,
         forwardInputMessages: false,
         storeFrontEndInputAsState: true,
         convertBack(value) {
@@ -493,7 +424,6 @@ module.exports = (RED) => {
             const newMsg = {};
             newMsg.socketid = msg.socketid;
             newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
-            newMsg.input = RED.util.getMessageProperty(msg, config.inputField || 'input');
             return { msg: newMsg };
           }
           return msg;
@@ -524,23 +454,20 @@ module.exports = (RED) => {
           $scope.flag = true;
           $scope.init = (config) => {
             $scope.config = config;
-            $scope.containerDiv = $(`#multiStateSwitchContainer_${config.id}`)[0];
-            $scope.sliderDivElement = $(`#multiStateSwitchSlider_${config.id}`)[0];
-            $scope.sliderWrapperElement = $(`#multiStateSwitchSliderWrapper_${config.id}`)[0];
-            // Get a reference to the sub-DIV element
+            $scope.containerDiv = $(`#uiOutputContainer_${config.id}`)[0];
+            $scope.sliderDivElement = $(`#uiOutputSlider_${config.id}`)[0];
+            $scope.sliderWrapperElement = $(`#uiOutputSliderWrapper_${config.id}`)[0];
             const toggleRadioDiv = $scope.containerDiv.firstElementChild;
-            // Create all the required  button elements
             config.options.forEach((option, index) => {
               const divElement = document.createElement('div');
-              divElement.setAttribute('class', `multistate-switch-button multistate-switch-button-${config.id}`);
-              divElement.setAttribute('id', `mstbtn_${config.id}_${index}`);
+              divElement.setAttribute('class', `ui-output-button ui-output-button-${config.id}`);
+              divElement.setAttribute('id', `uiobtn_${config.id}_${index}`);
               divElement.innerHTML = option.label;
               divElement.addEventListener('click', () => {
                 switchStateChanged(option.value, true);
               });
               toggleRadioDiv.appendChild(divElement);
             });
-            // Make sure the initial element gets the correct color
             switchStateChanged(config.initOpt.value, false);
           };
 
@@ -549,10 +476,7 @@ module.exports = (RED) => {
               return;
             }
             if (msg.state !== undefined) {
-              switchStateChanged(msg.state.toString(), false);
-            }
-            if (msg.input !== undefined) {
-              $scope.inputState = msg.input;
+              $scope.inputState = msg.state.toString();
             }
           });
 
@@ -578,16 +502,14 @@ module.exports = (RED) => {
           const switchStateChanged = (newValue, sendMsg) => {
             let divIndex = -1;
             const newMsg = {};
-            // Try to find an option with a value identical to the specified value
-            // For every button be sure that button exists and change mouse cursor and pointer-events
             $scope.config.options.forEach((option, index) => {
-              if ($(`#mstbtn_${$scope.config.id}_${index}`).length) {
-                $(`#mstbtn_${$scope.config.id}_${index}`).css({ cursor: 'pointer', 'pointer-events': 'auto' });
-                $(`#mstbtn_${$scope.config.id}_${index}`).removeClass('light dark');
+              if ($(`#uiobtn_${$scope.config.id}_${index}`).length) {
+                $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'pointer', 'pointer-events': 'auto' });
+                $(`#uiobtn_${$scope.config.id}_${index}`).removeClass('light dark');
                 if (option.value === newValue) {
-                  $(`#mstbtn_${$scope.config.id}_${index}`).css({ cursor: 'default', 'pointer-events': 'none' });
+                  $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'default', 'pointer-events': 'none' });
                   const color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor;
-                  $(`#mstbtn_${$scope.config.id}_${index}`).addClass(txtClassToStandOut(color, 'light', 'dark'));
+                  $(`#uiobtn_${$scope.config.id}_${index}`).addClass(txtClassToStandOut(color, 'light', 'dark'));
                   divIndex = index;
                 }
               }
@@ -622,6 +544,7 @@ module.exports = (RED) => {
               }
               if (sendMsg) {
                 $scope.send(newMsg);
+                $scope.emit(newMsg);
               }
             } else {
               console.log(`No radio button has value '${newValue}'`);
@@ -643,11 +566,12 @@ module.exports = (RED) => {
         done();
       });
     } catch (e) {
-      node.error(e);
-      console.trace(e);
       updateErrorInfo(e);
+      node.error(e);
     }
   }
-  RED.nodes.registerType('outlet', OutletNode);
+  RED.nodes.registerType('ui_output', OutletNode, {
+    dynamicModuleList: "libs",
+  });
   RED.library.register('functions');
 };

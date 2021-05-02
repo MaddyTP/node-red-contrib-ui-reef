@@ -20,8 +20,8 @@
   "homepage": "https://github.com/MaddyTP/node-red-contrib-ui-reef#readme",
   "node-red": {
     "nodes": {
-      "outlet": "outlet.js",
-      "switch": "switch.js"
+      "ui_output": "ui_output.js",
+      "ui_input": "ui_input.js"
     }
   },
   "dependencies": {
