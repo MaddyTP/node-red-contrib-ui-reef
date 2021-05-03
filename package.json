@@ -21,16 +21,12 @@
   "node-red": {
     "nodes": {
       "ui_output": "ui_output.js",
-      "ui_input": "ui_input.js"
+      "ui_input": "ui_input.js",
+      "ui_probe": "ui_probe.js"
     }
   },
   "dependencies": {
-    "events": "^3.3.0",
-    "highcharts": "^9.0.1",
-    "npm": "^7.11.1",
-    "npm-install-to": "^3.0.1",
-    "strip-comments": "^2.0.1",
-    "temp": "^0.9.4"
+    "highcharts": "^9.0.1"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

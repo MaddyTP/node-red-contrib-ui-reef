@@ -22,13 +22,14 @@ module.exports = (RED) => {
        <style>
            .ui-input-container{
                display: block;
-               width:100%;
-               margin:auto;
+               width: calc(100% - 6px);
+               height: calc(100% - 6px);
+               margin: auto;
                padding: 3px;
            }
            .ui-input-header{
                display: flex;
-                justify-content: space-between;
+               justify-content: space-between;
                font-size: 14px;
                font-weight: 500;
                letter-spacing: .1em;
@@ -37,35 +38,28 @@ module.exports = (RED) => {
                padding-left: 2px;
                padding-right: 2px;
            }
-           .ui-input-config{
-               color: #999;
-               cursor: pointer;
-           }
            .ui-input-wrapper{
-               border:1px dashed gray;
+               border: 1px dashed gray;
                display: flex;
                flex-flow: column nowrap;
                justify-content: center;
                align-items: center;
-               position:relative;
+               position: relative;
                font-size: 14px;
                font-weight: 425;
                letter-spacing: .06em;
                text-transform: uppercase;
                margin: auto 0;
-               width:100%;
+               width: 100%;
                height: 1.55em;
            }
            .ui-input-slider-wrapper{
-                opacity:0.5;
-               height: 1em;
-               padding-top: 0.25em;
-               padding-bottom: 0.25em;
-               z-index:0
+               opacity: 0.5;
+               z-index: 0
            }
            .ui-input-body{
-                color:gray;
-               pointer-events:none;
+               color: gray;
+               pointer-events: none;
                display: inline-flex;
                justify-content: flex-start;
                width: 100%;
@@ -76,8 +70,8 @@ module.exports = (RED) => {
            .ui-input-slider{                
                background-color: var(--nr-dashboard-widgetColor);
                position: absolute;
-               height: 1.2em;
-               transform: translate(0.1em, -0.25em);
+               height: 1.3em;
+               transform: translate(0.1em, -0.1em);
                transition: all .4s ease;
                left: 0%;
                z-index:0;
@@ -107,12 +101,7 @@ module.exports = (RED) => {
            }
        </style>
        <div class="ui-input-container" ng-init='init(${configAsJson})'>
-           <div ng-if="${config.label !== ''}" class="ui-input-header">
-               <div>${config.label}</div>
-               <div>
-                   <i class="fa fa-cog ui-input-config"></i>
-               </div>
-           </div>
+            <div ng-if="${config.label !== ''}" class="ui-input-header">${config.label}</div>
            <div id="uiInputContainer_${config.id}" class="ui-input-wrapper ui-input-round">
                <div id="uiInputBody_${config.id}"" class="ui-input-body">
                    <div id="uiInputSliderWrapper_${config.id}" class="ui-input-slider-wrapper">

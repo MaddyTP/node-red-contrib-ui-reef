@@ -26,13 +26,14 @@ module.exports = (RED) => {
       <style>
           .ui-output-container{
               display: block;
-              width:100%;
-              margin:auto;
+              width: calc(100% - 6px);
+              height: calc(100% - 6px);
+              margin: auto;
               padding: 3px;
           }
           .ui-output-header{
               display: flex;
-                justify-content: space-between;
+              justify-content: space-between;
               font-size: 14px;
               font-weight: 500;
               letter-spacing: .1em;
@@ -41,44 +42,26 @@ module.exports = (RED) => {
               padding-left: 2px;
               padding-right: 2px;
           }
-          .ui-output-config{
-              color: #999;
-              cursor: pointer;
-          }
-          .ui-output-wrapper.disabled{
-              border-color:gray;
-              border-style:dashed;
-          }
           .ui-output-wrapper{
               border:1px solid var(--nr-dashboard-widgetColor);
               display: flex;
               flex-flow: column nowrap;
               justify-content: center;
               align-items: center;
-              position:relative;
+              position: relative;
               font-size: 14px;
               font-weight: 425;
               letter-spacing: .06em;
               text-transform: uppercase;
               margin: auto 0;
-              width:100%;
+              width: 100%;
               height: 1.55em;
           }
-          .ui-output-slider-wrapper.disabled{
-              opacity:0.5;
-          }
           .ui-output-slider-wrapper{
-              height: 1em;
-              padding-top: 0.25em;
-              padding-bottom: 0.25em;
               z-index:0
           }
-          .ui-output-body.disabled{
-              color:gray;
-              pointer-events:none; 
-          }
           .ui-output-body{
-              pointer-events:auto;
+              pointer-events: auto;
               display: inline-flex;
               justify-content: flex-start;
               width: 100%;
@@ -89,17 +72,14 @@ module.exports = (RED) => {
           .ui-output-slider{                
               background-color: var(--nr-dashboard-widgetColor);
               position: absolute;
-              height: 1.2em;
-              transform: translate(0.1em, -0.25em);
+              height: 1.3em;
+              transform: translate(0.1em, -0.1em);
               transition: all .4s ease;
               left: 0%;
               z-index:0;
           }
           .ui-output-button-${config.id}{
               width:calc(100% / ${config.options.length}); 
-          }
-          .ui-output-button.disabled{
-              pointer-events:none !important;
           }
           .ui-output-button.dark{
               color:var(--nr-dashboard-widgetBgndColor);
@@ -128,7 +108,6 @@ module.exports = (RED) => {
               <div>${config.label}</div>
               <div>
                   <span class="ui-output-input">{{inputState}}</span>
-                  <i class="fa fa-cog ui-output-config"></i>
               </div>
           </div>
           <div id="uiOutputContainer_${config.id}" class="ui-output-wrapper ui-output-round">
@@ -544,7 +523,6 @@ module.exports = (RED) => {
               }
               if (sendMsg) {
                 $scope.send(newMsg);
-                $scope.emit(newMsg);
               }
             } else {
               console.log(`No radio button has value '${newValue}'`);

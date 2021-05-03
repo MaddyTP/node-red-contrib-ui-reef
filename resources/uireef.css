@@ -1,0 +1,206 @@
+.ui-input-container{
+    display: block;
+    width:100%;
+    margin:auto;
+    padding: 3px;
+}
+.ui-input-header{
+    display: flex;
+     justify-content: space-between;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin: 0.1em;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+.ui-input-config{
+    color: #999;
+    cursor: pointer;
+}
+.ui-input-wrapper{
+    border:1px dashed gray;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    position:relative;
+    font-size: 14px;
+    font-weight: 425;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: auto 0;
+    width:100%;
+    height: 1.55em;
+}
+.ui-input-slider-wrapper{
+     opacity:0.5;
+    height: 1em;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    z-index:0
+}
+.ui-input-body{
+     color:gray;
+    pointer-events:none;
+    display: inline-flex;
+    justify-content: flex-start;
+    width: 100%;
+}
+.ui-input-slider{                
+    background-color: var(--nr-dashboard-widgetColor);
+    position: absolute;
+    height: 1.2em;
+    transform: translate(0.1em, -0.25em);
+    transition: all .4s ease;
+    left: 0%;
+    z-index:0;
+}
+.ui-input-button.dark{
+    color:var(--nr-dashboard-widgetBgndColor)
+}
+.ui-input-button.light{
+    color:var(--nr-dashboard-widgetTextColor)
+}
+.ui-input-button{
+   text-align:center;
+   z-index:1;
+   outline: none;
+   user-select:none;
+   cursor:pointer;
+   pointer-events:none;
+   line-height: 1.2em;
+   transition: color 0.5s ease;
+}
+.ui-input-round{
+    border-radius: 0.8em;
+}
+.ui-output-container{
+    display: block;
+    width:100%;
+    margin:auto;
+    padding: 3px;
+}
+.ui-output-header{
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin: 0.1em;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+.ui-output-config{
+    color: #999;
+    cursor: pointer;
+}
+.ui-output-wrapper.disabled{
+    border-color:gray;
+    border-style:dashed;
+}
+.ui-output-wrapper{
+    border:1px solid var(--nr-dashboard-widgetColor);
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    position:relative;
+    font-size: 14px;
+    font-weight: 425;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: auto 0;
+    width:100%;
+    height: 1.55em;
+}
+.ui-output-slider-wrapper.disabled{
+    opacity:0.5;
+}
+.ui-output-slider-wrapper{
+    height: 1em;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    z-index:0
+}
+.ui-output-body.disabled{
+    color:gray;
+    pointer-events:none; 
+}
+.ui-output-body{
+    pointer-events:auto;
+    display: inline-flex;
+    justify-content: flex-start;
+    width: 100%;
+}
+.ui-output-slider{                
+    background-color: var(--nr-dashboard-widgetColor);
+    position: absolute;
+    height: 1.2em;
+    transform: translate(0.1em, -0.25em);
+    transition: all .4s ease;
+    left: 0%;
+    z-index:0;
+}
+.ui-output-button.disabled{
+    pointer-events:none !important;
+}
+.ui-output-button.dark{
+    color:var(--nr-dashboard-widgetBgndColor);
+}
+.ui-output-button.light{
+    color:var(--nr-dashboard-widgetTextColor);
+}
+.ui-output-button{
+   text-align:center;
+   z-index:1;
+   outline: none;
+   user-select:none;
+   cursor:pointer;
+   line-height: 1.2em;
+   transition: color 0.5s ease;
+}
+.ui-output-round{
+    border-radius: 0.8em;
+}
+.ui-output-input{
+   color: var(--nr-dashboard-widgetColor);
+}
+.probe-container{
+    display: flex;
+    margin: auto;
+    height: 106px;
+    width: 330px;
+    padding: 3px;
+}
+.probe-chart{
+    border-radius: 8px;
+    width: 231px;
+}
+.probe-label{
+    display: block;
+    padding-left: 8px;
+    padding-right: 4px;
+    margin: auto;
+    width: 99px;
+    
+}
+.probe-name{
+    line-height: 30px;
+    letter-spacing: .1em;
+    font-size: 15px;
+    font-weight: 500;
+    color: #666;
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 1px dashed #aaa;
+}
+.probe-value{
+    position: relative;
+    font-size: 30px;
+    font-weight: 330;
+    color: #0094CE;
+    text-align: center;
+}
