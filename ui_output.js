@@ -16,6 +16,7 @@
  * */
 const util = require('util');
 const vm = require('vm');
+const path = require('path');
 
 module.exports = (RED) => {
   function HTML(config) {
@@ -24,85 +25,14 @@ module.exports = (RED) => {
     const configAsJson = JSON.stringify(config);
     const html = String.raw`
       <style>
-          .ui-output-container{
-              display: block;
-              width: calc(100% - 6px);
-              height: calc(100% - 6px);
-              margin: auto;
-              padding: 3px;
-          }
-          .ui-output-header{
-              display: flex;
-              justify-content: space-between;
-              font-size: 14px;
-              font-weight: 500;
-              letter-spacing: .1em;
-              text-transform: uppercase;
-              margin: 0.1em;
-              padding-left: 2px;
-              padding-right: 2px;
-          }
-          .ui-output-wrapper{
-              border:1px solid var(--nr-dashboard-widgetColor);
-              display: flex;
-              flex-flow: column nowrap;
-              justify-content: center;
-              align-items: center;
-              position: relative;
-              font-size: 14px;
-              font-weight: 425;
-              letter-spacing: .06em;
-              text-transform: uppercase;
-              margin: auto 0;
-              width: 100%;
-              height: 1.55em;
-          }
-          .ui-output-slider-wrapper{
-              z-index:0
-          }
-          .ui-output-body{
-              pointer-events: auto;
-              display: inline-flex;
-              justify-content: flex-start;
-              width: 100%;
-          }
           .ui-output-slider-${config.id}{
               width: calc((100% - (${config.options.length} * 0.2em)) / ${config.options.length});
-          }
-          .ui-output-slider{                
-              background-color: var(--nr-dashboard-widgetColor);
-              position: absolute;
-              height: 1.3em;
-              transform: translate(0.1em, -0.1em);
-              transition: all .4s ease;
-              left: 0%;
-              z-index:0;
           }
           .ui-output-button-${config.id}{
               width:calc(100% / ${config.options.length}); 
           }
-          .ui-output-button.dark{
-              color:var(--nr-dashboard-widgetBgndColor);
-          }
-          .ui-output-button.light{
-              color:var(--nr-dashboard-widgetTextColor);
-          }
-          .ui-output-button{
-             text-align:center;
-             z-index:1;
-             outline: none;
-             user-select:none;
-             cursor:pointer;
-             line-height: 1.2em;
-             transition: color 0.5s ease;
-          }
-          .ui-output-round{
-              border-radius: 0.8em;
-          }
-          .ui-output-input{
-             color: var(--nr-dashboard-widgetColor);
-          }
       </style>
+      <link href='ui-reef/css/uireef.css' rel='stylesheet' type='text/css'>
       <div class="ui-output-container" ng-init='init(${configAsJson})'>
           <div ng-if="${config.label !== ''}" class="ui-output-header">
               <div>${config.label}</div>
@@ -552,4 +482,15 @@ module.exports = (RED) => {
     dynamicModuleList: "libs",
   });
   RED.library.register('functions');
+
+  const uipath = RED.settings.ui.path || 'ui';
+  const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
+
+  RED.httpNode.get(fullPath, function (req, res) {
+      var options = {
+          root: __dirname + '/lib/',
+          dotfiles: 'deny'
+      };
+      res.sendFile(req.params[0], options)
+  });
 };

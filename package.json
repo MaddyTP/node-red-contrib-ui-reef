@@ -25,9 +25,7 @@
       "ui_probe": "ui_probe.js"
     }
   },
-  "dependencies": {
-    "highcharts": "^9.0.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
