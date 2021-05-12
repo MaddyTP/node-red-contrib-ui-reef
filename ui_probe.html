@@ -30,8 +30,12 @@
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label" style="width: 100%;"></div>
     </div>
     <div class="form-row">
-        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> Input</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-stateField" style="width: 100%;"></div>
+        <label for="node-input-chartField"><i class="fa fa-line-chart"></i> Chart</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-chartField" style="width: 100%;"></div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-valueField"><i class="fa fa-tag"></i> Value</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-valueField" style="width: 100%;"></div>
     </div>
 </script>
 
@@ -57,7 +61,8 @@
             },
             height: { value: 2 },
             label: { value: 'probe' },
-            stateField: { value: 'payload' },
+            chartField: { value: 'payload' },
+            valueField: { value: 'payload' },
         },
         inputs: 1,
         outputs: 0,
@@ -78,8 +83,14 @@
                 group: "#node-input-group"
             });
 
-            $("#node-input-stateField").val(this.stateField);
-            $('#node-input-stateField').typedInput({
+            $("#node-input-chartField").val(this.chartField);
+            $('#node-input-chartField').typedInput({
+                types: ['msg'],
+                default: 'msg'
+            });
+
+            $("#node-input-valueField").val(this.valueField);
+            $('#node-input-valueField').typedInput({
                 types: ['msg'],
                 default: 'msg'
             });

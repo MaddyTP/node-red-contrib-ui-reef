@@ -84,124 +84,12 @@
                             }
                         }
                     },
-                    convert: (value, oldValue, msg) => {
-                        let converted = {};
-                        if (Array.isArray(value)) {
-                            if (value.length === 0) { // reset chart
-                                converted.update = false;
-                                converted.updatedValues = [];
-                                return converted;
-                            }
-                            if (value[0].hasOwnProperty("series") && value[0].hasOwnProperty("data")) {
-                                var flag = true;
-                                for (var dd = 0; dd < value[0].data.length; dd++ ) {
-                                    if (!isNaN(value[0].data[dd][0])) { flag = false; }
-                                }
-                                if (flag) { delete value[0].labels; }
-
-                                if (config.removeOlderPoints) {
-                                    for (var dl=0; dl < value[0].data.length; dl++ ) {
-                                        if (value[0].data[dl].length > config.removeOlderPoints) {
-                                            value[0].data[dl] = value[0].data[dl].slice(-config.removeOlderPoints);
-                                        }
-                                    }
-                                }
-                                
-                                value = [{ key:node.id, values:(value[0] || {series:[], data:[], labels:[]}) }];
-                            } else {
-                                node.warn("Bad data inject");
-                                value = oldValue;
-                            }
-                            converted.update = false;
-                            converted.updatedValues = value;
-                        } else {
-                            if (value === false) { value = null; }              // let false also create gaps in chart
-                            if (value !== null) {                               // let null object through for gaps
-                                value = parseFloat(value);                      // only handle numbers
-                                if (isNaN(value)) { return; }                   // return if not a number
-                            }
-                            converted.newPoint = true;
-                            var label = msg.label || "";
-                            var series = msg.series || msg.topic || "";
-                            if ((!oldValue) || (oldValue.length === 0)) {
-                                oldValue = [{ key:node.id, values:{ series:[], data:[], labels:[] } }];
-                            }
-                            var refill = false;
-                            var s = oldValue[0].values.series.indexOf(series);
-                            if (!oldValue[0].values.hasOwnProperty("labels")) { oldValue[0].values.labels = []; }
-                            var l = oldValue[0].values.labels.indexOf(label);
-                            if (s === -1) {
-                                oldValue[0].values.series.push(series);
-                                s = oldValue[0].values.series.length - 1;
-                                oldValue[0].values.data[s] = [];
-                                if (l > 0) { refill = true; }
-                            }
-                            if (l === -1) {
-                                oldValue[0].values.labels.push(label);
-                                l = oldValue[0].values.labels.length - 1;
-                                if (l > 0) { refill = true; }
-                            }
-                            var time;
-                            if (msg.timestamp !== undefined) { 
-                                time = new Date(msg.timestamp).getTime(); 
-                            } else { 
-                                time = new Date().getTime(); 
-                            };
-                            var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
-                            var limitTime = time - limitOffsetSec * 1000;
-                            if (time < limitTime) { return oldValue; } // ignore if too old for window
-                            var point = { "x":time, "y":value };
-                            oldValue[0].values.data[s].push(point);
-                            converted.newPoint = [{ key:node.id, update:true, values:{ series:series, data:point, labels:label } }];
-                            var rc = 0;
-                            for (var u = 0; u < oldValue[0].values.data[s].length; u++) {
-                                if (oldValue[0].values.data[s][u].x >= limitTime) { break; } // stop as soon as we are in time window.
-                                else { rc += 1; }
-                            }
-                            if (rc > 0) { oldValue[0].values.data[s].splice(0,rc); }
-                            if (config.removeOlderPoints) {
-                                var rc2 = oldValue[0].values.data[s].length-config.removeOlderPoints;
-                                if (rc2 > 0) { oldValue[0].values.data[s].splice(0,rc2); rc = rc2;}
-                            }
-                            if (rc > 0) { converted.newPoint[0].remove = rc; }
-                            var swap; // insert correctly if a timestamp was earlier.
-                            for (var t = oldValue[0].values.data[s].length-2; t>=0; t--) {
-                                if (oldValue[0].values.data[s][t].x <= time) {
-                                    break;  // stop if we are in the right place
-                                }
-                                else {
-                                    swap = oldValue[0].values.data[s][t];
-                                    oldValue[0].values.data[s][t] = oldValue[0].values.data[s][t+1];
-                                    oldValue[0].values.data[s][t+1] = swap;
-                                }
-                            }
-                            if (swap) { converted.newPoint = true; } // if inserted then update whole chart
-
-                            if (Date.now() > (dnow + 60000)) {
-                                dnow = Date.now();
-                                for (var x = 0; x < oldValue[0].values.data.length; x++) {
-                                    for (var y = 0; y < oldValue[0].values.data[x].length; y++) {
-                                        if (oldValue[0].values.data[x][y].x >= limitTime) {
-                                            break;  // stop as soon as we are in time window.
-                                        }
-                                        else {
-                                            oldValue[0].values.data[x].splice(0,1);
-                                            converted.newPoint = true;
-                                            y = y - 1;
-                                        }
-                                    }
-                                }
-                            }
-                            converted.update = true;
-                            converted.updatedValues = oldValue;
-                        }
-                        return converted;
-                    },
                     beforeEmit: (msg) => {
                         if (msg) {
                             const newMsg = {};
                             newMsg.socketid = msg.socketid;
-                            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
+                            newMsg.chart = RED.util.getMessageProperty(msg, config.chartField || 'payload');
+                            newMsg.value = RED.util.getMessageProperty(msg, config.valueField || 'payload');
                             return { msg: newMsg };
                         }
                         return msg;
@@ -229,6 +117,7 @@
                                 },
                                 xAxis: {
                                     visible: false,
+                                    type: 'datetime',
                                 },
                                 yAxis: {
                                     visible: false,
@@ -261,7 +150,7 @@
 
                         $scope.$watch('msg', (msg) => {
                             if (msg) {
-                                $scope.chartDiv.series[0].setData(msg.state, true);
+                                $scope.chartDiv.series[0].setData(msg.chart, true);
                                 $scope.chartDiv.reflow();
                             }
                         });
