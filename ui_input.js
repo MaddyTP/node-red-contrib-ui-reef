@@ -20,28 +20,28 @@ module.exports = (RED) => {
         config.id = config.id.replace('.', '_');
         const configAsJson = JSON.stringify(config);
         const html = String.raw`
-       <style>
-           .ui-input-slider-${config.id}{
-               width: calc((100% - (${config.options.length} * 0.2em)) / ${config.options.length});
-           }
-           .ui-input-button-${config.id}{
-               width:calc(100% / ${config.options.length}); 
-               pointer-events:none;
-           }
-       </style>
-       <link href='ui-reef/css/uireef.css' rel='stylesheet' type='text/css'>
-       <div class="ui-input-container" ng-init='init(${configAsJson})'>
-            <div ng-if="${config.label !== ''}" class="ui-input-header">${config.label}</div>
-           <div id="uiInputContainer_${config.id}" class="ui-input-wrapper ui-input-round">
-               <div id="uiInputBody_${config.id}"" class="ui-input-body">
-                   <div id="uiInputSliderWrapper_${config.id}" class="ui-input-slider-wrapper">
-                       <div id="uiInputSlider_${config.id}" class="ui-input-slider ui-input-round ui-input-slider-${config.id}"></div>
-                   </div>
-                   <!-- The radio buttons will be inserted here dynamically on the frontend side -->
-               </div>
-           </div>
-       </div>
-       `;
+        <style>
+            .ui-input-slider-${config.id}{
+                width: calc((100% - (${config.options.length} * 0.2em)) / ${config.options.length});
+            }
+            .ui-input-button-${config.id}{
+                width:calc(100% / ${config.options.length}); 
+                pointer-events:none;
+            }
+        </style>
+        <link href='ui-reef/css/uireef.css' rel='stylesheet' type='text/css'>
+        <div class="ui-input-container" ng-init='init(${configAsJson})'>
+                <div ng-if="${config.label !== ''}" class="ui-input-header">${config.label}</div>
+            <div id="uiInputContainer_${config.id}" class="ui-input-wrapper ui-input-round">
+                <div id="uiInputBody_${config.id}"" class="ui-input-body">
+                    <div id="uiInputSliderWrapper_${config.id}" class="ui-input-slider-wrapper">
+                        <div id="uiInputSlider_${config.id}" class="ui-input-slider ui-input-round ui-input-slider-${config.id}"></div>
+                    </div>
+                    <!-- The radio buttons will be inserted here dynamically on the frontend side -->
+                </div>
+            </div>
+        </div>
+        `;
 
         return html;
     }

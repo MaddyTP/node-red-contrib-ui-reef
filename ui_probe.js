@@ -37,7 +37,7 @@
             <div id="uiProbeChart_${config.id}" class="probe-chart"></div>
             <div class="probe-label">
                 <div class="probe-name">${config.label}</div>
-                <div class="probe-value">{{inputValue}}</div>
+                <div class="probe-value">{{latestValue}}</div>
             </div>
         </div>
        `;
@@ -62,6 +62,21 @@
 
                 RED.nodes.createNode(this, config);
 
+                node.convertNum = (val) => {
+                    if (val.toString().indexOf('.') !== -1) {
+                        var lgth = val.toString().split('.')[0].length;
+                        if (lgth <= 1) {
+                            return val.toFixed(2);
+                        } else if (lgth === 2) {
+                            return val.toFixed(1);
+                        } else if (lgth >= 3) {
+                            return val.toFixed(0);
+                        }
+                    } else {
+                        return val;
+                    }
+                };
+
                 const html = HTML(config);
                 const done = ui.addWidget({
                     node,
@@ -75,50 +90,60 @@
                     forwardInputMessages: false,
                     storeFrontEndInputAsState: true,
                     convert: (value, oldValue, msg) => {
+                        if (!oldValue) {
+                            oldValue = { plot: [], value: 0 };
+                        }
+                        var time;
+                        if (msg.timestamp !== undefined) { 
+                            time = new Date(msg.timestamp).getTime(); 
+                        } else { 
+                            time = new Date().getTime();
+                        }
+                        var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
+                        var limitTime = time - (limitOffsetSec * 1000);
                         if (Array.isArray(value)) {
                             var flag = false;
                             if (value.length === 0) {
                                 value = [];
-                            } else if (value[0].hasOwnProperty("x") && value[0].hasOwnProperty("y")) {
-                                flag = true;
                             } else if (Array.isArray(value[0])) {
                                 if (value[0].length !== 2) { flag = true; }
+                            } else if (!value[0].hasOwnProperty("x") && !value[0].hasOwnProperty("y")) {
+                                flag = true;
                             } else {
                                 flag = true;
                             }
                             if (flag) {
                                 node.warn("Bad data inject");
-                                value = oldValue;
+                                return;
+                            } else {
+                                oldValue.plot = value;
                             }
                         } else {
                             if (value !== null) {
                                 value = parseFloat(value);
-                                if (isNaN(value)) { return; }
+                                if (isNaN(value)) {
+                                    node.warn("Bad data inject");
+                                    return;
+                                }
                             }
-                            if (!oldValue || oldValue.length === 0) {
-                                oldValue = [];
-                            }
-                            var time;
-                            if (msg.timestamp !== undefined) { 
-                                time = new Date(msg.timestamp).getTime(); 
-                            } else { 
-                                time = new Date().getTime();
-                            }
-                            var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
-                            var limitTime = time - (limitOffsetSec * 1000);
                             if (time >= limitTime) {
                                 var point = { "x":time, "y":value };
-                                var tmp = [];
-                                oldValue.push(point);
-                                for (var u = 0; u < oldValue.length; u++) {
-                                    if (oldValue[u][0] >= limitTime || oldValue[u].x >= limitTime) { 
-                                        tmp.push(oldValue[u]);
-                                    }
-                                }
-                                oldValue = tmp;
+                                oldValue.plot.push(point);
                             }
-                            value = oldValue;
                         }
+                        var tmp = [];
+                        var latestValue = 0;
+                        for (var u = 0; u < oldValue.plot.length; u++) {
+                            if (oldValue.plot[u][0] >= limitTime || oldValue.plot[u].x >= limitTime) { 
+                                tmp.push(oldValue.plot[u]);
+                            }
+                            if (oldValue.plot[u][0] > latestValue || oldValue.plot[u].x >=latestValue) { 
+                                latestValue = (oldValue.plot[u].hasOwnProperty('y')) ? oldValue.plot[u].y : oldValue.plot[u][1];
+                            }
+                        }
+                        oldValue.plot = tmp;
+                        oldValue.value = node.convertNum(latestValue);;
+                        value = oldValue;
                         return value;
                     },
                     beforeEmit(msg, value) {
@@ -133,7 +158,7 @@
                         $scope.init = (config) => {
                             $scope.config = config;
                             $scope.unique = $scope.$eval('$id');
-                            $scope.inputValue = 231;
+                            $scope.latestValue = 0;
                             $scope.chartDiv = new Highcharts.chart('uiProbeChart_' + $scope.config.id, {
                                 chart: {
                                     type: 'spline',
@@ -156,8 +181,8 @@
                                     maxPadding: 0.01,
                                 },
                                 tooltip: {
-                                    headerFormat: '',
-                                    pointFormat: '{point.y:.2f}'
+                                    xDateFormat: '%m-%d-%Y',
+                                    pointFormat: '{point.y:.2f}',
                                 },
                                 legend: {
                                     enabled: false,
@@ -183,8 +208,9 @@
 
                         $scope.$watch('msg', (msg) => {
                             if (msg) {
-                                $scope.chartDiv.series[0].setData(msg.payload, true);
+                                $scope.chartDiv.series[0].setData(msg.payload.plot, true);
                                 $scope.chartDiv.reflow();
+                                $scope.latestValue = msg.payload.value;
                             }
                         });
                     },
