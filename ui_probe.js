@@ -74,28 +74,58 @@
                     emitOnlyNewValues: false,
                     forwardInputMessages: false,
                     storeFrontEndInputAsState: true,
-                    convertBack: (data) => {
-                        if (data) {
-                            if (data[0] && data[0].hasOwnProperty('values')) {
-                                return [data[0].values];
+                    convert: (value, oldValue, msg) => {
+                        if (Array.isArray(value)) {
+                            var flag = false;
+                            if (value.length === 0) {
+                                value = [];
+                            } else if (value[0].hasOwnProperty("x") && value[0].hasOwnProperty("y")) {
+                                flag = true;
+                            } else if (Array.isArray(value[0])) {
+                                if (value[0].length !== 2) { flag = true; }
+                            } else {
+                                flag = true;
                             }
-                            if (data.length == 0) {
-                                return [];
+                            if (flag) {
+                                node.warn("Bad data inject");
+                                value = oldValue;
                             }
+                        } else {
+                            if (value !== null) {
+                                value = parseFloat(value);
+                                if (isNaN(value)) { return; }
+                            }
+                            if (!oldValue || oldValue.length === 0) {
+                                oldValue = [];
+                            }
+                            var time;
+                            if (msg.timestamp !== undefined) { 
+                                time = new Date(msg.timestamp).getTime(); 
+                            } else { 
+                                time = new Date().getTime();
+                            }
+                            var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
+                            var limitTime = time - (limitOffsetSec * 1000);
+                            if (time >= limitTime) {
+                                var point = { "x":time, "y":value };
+                                var tmp = [];
+                                oldValue.push(point);
+                                for (var u = 0; u < oldValue.length; u++) {
+                                    if (oldValue[u][0] >= limitTime || oldValue[u].x >= limitTime) { 
+                                        tmp.push(oldValue[u]);
+                                    }
+                                }
+                                oldValue = tmp;
+                            }
+                            value = oldValue;
                         }
+                        return value;
                     },
-                    beforeEmit: (msg) => {
-                        if (msg) {
-                            const newMsg = {};
-                            newMsg.socketid = msg.socketid;
-                            newMsg.chart = RED.util.getMessageProperty(msg, config.chartField || 'payload');
-                            newMsg.value = RED.util.getMessageProperty(msg, config.valueField || 'payload');
-                            return { msg: newMsg };
-                        }
-                        return msg;
-                    },
-                    beforeSend: (msg, orig) => {
-                        return msg;
+                    beforeEmit(msg, value) {
+                        return { msg: {
+                            payload: value,
+                            socketid: msg.socketid
+                        }};
                     },
                     initController: ($scope) => {
                         $scope.flag = true;
@@ -138,7 +168,10 @@
                                 plotOptions: {
                                     series: {
                                         lineColor: '#0094CE',
-                                    }
+                                        marker: {
+                                            enabled: false,
+                                        },
+                                    },
                                 },
                                 series: [{}],
                                 exporting: {
@@ -150,7 +183,7 @@
 
                         $scope.$watch('msg', (msg) => {
                             if (msg) {
-                                $scope.chartDiv.series[0].setData(msg.chart, true);
+                                $scope.chartDiv.series[0].setData(msg.payload, true);
                                 $scope.chartDiv.reflow();
                             }
                         });
