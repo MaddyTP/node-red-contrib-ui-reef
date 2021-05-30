@@ -14,7 +14,8 @@
  * limitations under the License.
  * */
 
- const path = require('path');
+ const { Chart } = require('chart.js');
+const path = require('path');
 
  module.exports = (RED) => {
     function checkConfig(node, conf) {
@@ -31,10 +32,14 @@
         config.id = config.id.replace('.', '_');
         const configAsJson = JSON.stringify(config);
         const html = String.raw`
-        <link href='ui-reef/css/uireef.css' rel='stylesheet' type='text/css'>
-        <script type='text/javascript' src='ui-reef/js/highcharts.js'></script>
+        <link href='lib/css/uireef.css' rel='stylesheet' type='text/css'>
+        <script type='text/javascript' src='dep/chart.js/dist/chart.min.js'></script>
+        <script type='text/javascript' src='dep/moment/min/moment.min.js'></script>
+        <script type='text/javascript' src='dep/chartjs-adapter-moment/dist/chartjs-adapter-moment.min.js'></script>
         <div class="probe-container" ng-init='init(${configAsJson})'>
-            <div id="uiProbeChart_${config.id}" class="probe-chart"></div>
+            <div class="probe-chart">
+                <canvas id="uiProbeChart_${config.id}"></canvas>
+            </div>
             <div class="probe-label">
                 <div class="probe-name">${config.label}</div>
                 <div class="probe-value">{{latestValue}}</div>
@@ -105,13 +110,13 @@
                             var flag = false;
                             if (value.length === 0) {
                                 value = [];
-                            } else if (Array.isArray(value[0])) {
-                                if (value[0].length !== 2) { flag = true; }
+                            //} else if (Array.isArray(value[0])) {
+                                //if (value[0].length !== 2) { flag = true; }
                             } else if (!value[0].hasOwnProperty("x") && !value[0].hasOwnProperty("y")) {
                                 flag = true;
-                            } else {
-                                flag = true;
-                            }
+                            } //else {
+                                //flag = true;
+                            //}
                             if (flag) {
                                 node.warn("Bad data inject");
                                 return;
@@ -146,7 +151,7 @@
                         value = oldValue;
                         return value;
                     },
-                    beforeEmit(msg, value) {
+                    beforeEmit: (msg, value) => {
                         return { msg: {
                             payload: value,
                             socketid: msg.socketid
@@ -154,62 +159,55 @@
                     },
                     initController: ($scope) => {
                         $scope.flag = true;
-                        $scope.chartDiv;
+                        $scope.jsChart;
                         $scope.init = (config) => {
                             $scope.config = config;
                             $scope.unique = $scope.$eval('$id');
                             $scope.latestValue = 0;
-                            $scope.chartDiv = new Highcharts.chart('uiProbeChart_' + $scope.config.id, {
-                                chart: {
-                                    type: 'spline',
-                                    backgroundColor: '#EAF4FA',
+                            $scope.jsChart = new Chart($(`#uiProbeChart_${$scope.config.id}`), {
+                                type: 'line',
+                                data: {
+                                    datasets: [{
+                                        data: [],
+                                        fill: false,
+                                        tension: 0.4,
+                                        pointRadius: 0,
+                                    }],
                                 },
-                                title: {
-                                    text: ''
-                                },
-                                subtitle: {
-                                    text: ''
-                                },
-                                xAxis: {
-                                    visible: false,
-                                    type: 'datetime',
-                                },
-                                yAxis: {
-                                    visible: false,
-                                    startOnTick: false,
-                                    endOnTick: false,
-                                    maxPadding: 0.01,
-                                },
-                                tooltip: {
-                                    xDateFormat: '%m-%d-%Y',
-                                    pointFormat: '{point.y:.2f}',
-                                },
-                                legend: {
-                                    enabled: false,
-                                },
-                                credits: {
-                                    enabled: false,
-                                },
-                                plotOptions: {
-                                    series: {
-                                        lineColor: '#0094CE',
-                                        marker: {
-                                            enabled: false,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    layout: {
+                                        padding: 5,
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: false,
+                                        },
+                                        title: {
+                                            display: false,
                                         },
                                     },
+                                    interaction: {
+                                        intersect: false,
+                                    },
+                                    scales: {
+                                        x: {
+                                            display: false,
+                                            type: 'time',
+                                        },
+                                        y: {
+                                            display: false,
+                                        }
+                                    }
                                 },
-                                series: [{}],
-                                exporting: {
-                                    enabled: false,
-                                }
                             });
-                            $scope.chartDiv.reflow();
                         };
 
                         $scope.$watch('msg', (msg) => {
                             if (msg) {
-                                $scope.chartDiv.series[0].setData(msg.payload.plot, true);
-                                $scope.chartDiv.reflow();
+                                $scope.jsChart.data.datasets[0].data = msg.payload.plot;
+                                $scope.jsChart.update();
                                 $scope.latestValue = msg.payload.value;
                             }
                         });
@@ -227,11 +225,20 @@
     RED.nodes.registerType('ui_probe', ProbeNode);
 
     const uipath = RED.settings.ui.path || 'ui';
-    const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
+    const libPath = path.join(RED.settings.httpNodeRoot, uipath, '/lib/*').replace(/\\/g, '/');
+    const depPath = path.join(RED.settings.httpNodeRoot, uipath, '/dep/*').replace(/\\/g, '/');
 
-    RED.httpNode.get(fullPath, function (req, res) {
+    RED.httpNode.get(libPath, function (req, res) {
         var options = {
             root: __dirname + '/lib/',
+            dotfiles: 'deny'
+        };
+        res.sendFile(req.params[0], options)
+    });
+
+    RED.httpNode.get(depPath, function (req, res) {
+        var options = {
+            root: __dirname + '/node_modules/',
             dotfiles: 'deny'
         };
         res.sendFile(req.params[0], options)

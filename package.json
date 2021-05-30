@@ -25,7 +25,11 @@
       "ui_probe": "ui_probe.js"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "chart.js": "^3.3.1",
+    "chartjs-adapter-moment": "^1.0.0",
+    "moment": "^2.29.1"
+  },
   "devDependencies": {
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
