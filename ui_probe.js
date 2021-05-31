@@ -33,12 +33,12 @@ const path = require('path');
         const configAsJson = JSON.stringify(config);
         const html = String.raw`
         <link href='lib/css/uireef.css' rel='stylesheet' type='text/css'>
-        <script type='text/javascript' src='dep/chart.js/dist/chart.min.js'></script>
-        <script type='text/javascript' src='dep/moment/min/moment.min.js'></script>
-        <script type='text/javascript' src='dep/chartjs-adapter-moment/dist/chartjs-adapter-moment.min.js'></script>
+        <script type='text/javascript' src='dep/chart.js/dist/chart.js'></script>
+        <script type='text/javascript' src='dep/moment/moment.js'></script>
+        <script type='text/javascript' src='dep/chartjs-adapter-moment/dist/chartjs-adapter-moment.js'></script>
         <div class="probe-container" ng-init='init(${configAsJson})'>
             <div class="probe-chart">
-                <canvas id="uiProbeChart_${config.id}"></canvas>
+                <canvas id="uiProbeChart_${config.id}" class="probe-chart-canvas"></canvas>
             </div>
             <div class="probe-label">
                 <div class="probe-name">${config.label}</div>
@@ -77,9 +77,8 @@ const path = require('path');
                         } else if (lgth >= 3) {
                             return val.toFixed(0);
                         }
-                    } else {
-                        return val;
                     }
+                    return val;
                 };
 
                 const html = HTML(config);
@@ -92,13 +91,18 @@ const path = require('path');
                     format: html,
                     templateScope: 'local',
                     emitOnlyNewValues: false,
-                    forwardInputMessages: false,
+                    forwardInputMessages: true,
                     storeFrontEndInputAsState: true,
+                    convertBack: function(data) {
+                        if (data) {
+                            return data;
+                        }
+                    },
                     convert: (value, oldValue, msg) => {
                         if (!oldValue) {
                             oldValue = { plot: [], value: 0 };
                         }
-                        var time;
+                        var time = 0;
                         if (msg.timestamp !== undefined) { 
                             time = new Date(msg.timestamp).getTime(); 
                         } else { 
@@ -107,29 +111,17 @@ const path = require('path');
                         var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
                         var limitTime = time - (limitOffsetSec * 1000);
                         if (Array.isArray(value)) {
-                            var flag = false;
                             if (value.length === 0) {
                                 value = [];
-                            //} else if (Array.isArray(value[0])) {
-                                //if (value[0].length !== 2) { flag = true; }
                             } else if (!value[0].hasOwnProperty("x") && !value[0].hasOwnProperty("y")) {
-                                flag = true;
-                            } //else {
-                                //flag = true;
-                            //}
-                            if (flag) {
                                 node.warn("Bad data inject");
                                 return;
-                            } else {
-                                oldValue.plot = value;
                             }
+                            oldValue.plot = value;
                         } else {
-                            if (value !== null) {
-                                value = parseFloat(value);
-                                if (isNaN(value)) {
-                                    node.warn("Bad data inject");
-                                    return;
-                                }
+                            if (Number.isNaN(value) || value === null) {
+                                node.warn("Bad data inject");
+                                return;
                             }
                             if (time >= limitTime) {
                                 var point = { "x":time, "y":value };
@@ -142,12 +134,12 @@ const path = require('path');
                             if (oldValue.plot[u][0] >= limitTime || oldValue.plot[u].x >= limitTime) { 
                                 tmp.push(oldValue.plot[u]);
                             }
-                            if (oldValue.plot[u][0] > latestValue || oldValue.plot[u].x >=latestValue) { 
-                                latestValue = (oldValue.plot[u].hasOwnProperty('y')) ? oldValue.plot[u].y : oldValue.plot[u][1];
+                            if (oldValue.plot[u][0] > latestValue || oldValue.plot[u].x >= latestValue) { 
+                                latestValue = oldValue.plot[u].y;
                             }
                         }
                         oldValue.plot = tmp;
-                        oldValue.value = node.convertNum(latestValue);;
+                        oldValue.value = node.convertNum(latestValue);
                         value = oldValue;
                         return value;
                     },
@@ -162,12 +154,16 @@ const path = require('path');
                         $scope.jsChart;
                         $scope.init = (config) => {
                             $scope.config = config;
-                            $scope.unique = $scope.$eval('$id');
-                            $scope.latestValue = 0;
-                            $scope.jsChart = new Chart($(`#uiProbeChart_${$scope.config.id}`), {
+                            $scope.latestValue = '0';
+                            var chartBack = $scope.config.widgetColor + '1a';
+                            var ctx = $(`#uiProbeChart_${$scope.config.id}`);
+                            ctx.css('background-color', chartBack);
+                            $scope.jsChart = new Chart(ctx, {
                                 type: 'line',
                                 data: {
                                     datasets: [{
+                                        borderColor: $scope.config.widgetColor,
+                                        borderWidth: 2,
                                         data: [],
                                         fill: false,
                                         tension: 0.4,
@@ -177,8 +173,12 @@ const path = require('path');
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
+                                    animation: {
+                                        duration: 0,
+                                        easing: 'linear',
+                                    },
                                     layout: {
-                                        padding: 5,
+                                        padding: 10,
                                     },
                                     plugins: {
                                         legend: {
@@ -204,11 +204,11 @@ const path = require('path');
                             });
                         };
 
-                        $scope.$watch('msg', (msg) => {
-                            if (msg) {
-                                $scope.jsChart.data.datasets[0].data = msg.payload.plot;
+                        $scope.$watch('msg.payload', (newValue) => {
+                            if (newValue) {
+                                $scope.latestValue = newValue.value;
+                                $scope.jsChart.data.datasets[0].data = newValue.plot;
                                 $scope.jsChart.update();
-                                $scope.latestValue = msg.payload.value;
                             }
                         });
                     },

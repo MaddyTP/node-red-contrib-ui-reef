@@ -416,7 +416,7 @@
             noerr: { value: 0, required: true, validate: function (v) { return !v; } },
             repeat: { value: 5, validate: function (v) { return ((v === "") || (RED.validators.number(v) && (v >= 1) && (v <= 2147483))) } }
         },
-        inputs: 0,
+        inputs: 1,
         outputs: 1,
         icon: "clownfish.png",
         align: 'left',
