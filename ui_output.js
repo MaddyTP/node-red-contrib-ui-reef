@@ -37,28 +37,66 @@ module.exports = (RED) => {
     return html;
   }
 
+  // function sendResults(node, _msgid, msgs, cloneFirstMessage) {
+  //   if (msgs == null) {
+  //     return;
+  //   } else if (!Array.isArray(msgs)) {
+  //     msgs = [msgs];
+  //   }
+  //   var msgCount = 0;
+  //   for (var m = 0; m < msgs.length; m++) {
+  //     if (msgs[m]) {
+  //       if (!Array.isArray(msgs[m])) {
+  //         msgs[m] = [msgs[m]];
+  //       }
+  //       for (var n = 0; n < msgs[m].length; n++) {
+  //         var msg = msgs[m][n];
+  //         if (msg !== null && msg !== undefined) {
+  //           if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !Array.isArray(msg)) {
+  //             if (msgCount === 0 && cloneFirstMessage !== false) {
+  //               msgs[m][n] = RED.util.cloneMessage(msgs[m][n]);
+  //               msg = msgs[m][n];
+  //             }
+  //             msg._msgid = _msgid;
+  //             msgCount++;
+  //           } else {
+  //             var type = typeof msg;
+  //             if (type === 'object') {
+  //               type = Buffer.isBuffer(msg) ? 'Buffer' : (Array.isArray(msg) ? 'Array' : 'Date');
+  //             }
+  //             node.error(RED._("function.error.non-message-returned", { type: type }));
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   if (msgCount > 0) {
+  //     node.send(msgs);
+  //   }
+  // }
+
   function createVMOpt(node, kind) {
-    const opt = {
-      filename: `Function node${kind}:${node.id}${node.name ? ` [${node.name}]` : ''}`,
-      displayErrors: true,
+    var opt = {
+      filename: 'Function node' + kind + ':' + node.id + (node.name ? ' [' + node.name + ']' : ''),
+      displayErrors: true
     };
     return opt;
   }
 
   function updateErrorInfo(err) {
     if (err.stack) {
-      const stack = err.stack.toString();
-      const m = /^([^:]+):([^:]+):(\d+).*/.exec(stack);
+      var stack = err.stack.toString();
+      var m = /^([^:]+):([^:]+):(\d+).*/.exec(stack);
       if (m) {
-        const line = parseInt(m[3], 10) - 1;
-        let kind = 'body:';
+        var line = parseInt(m[3]) - 1;
+        var kind = "body:";
         if (/setup/.exec(m[1])) {
-          kind = 'setup:';
+          kind = "setup:";
         }
         if (/cleanup/.exec(m[1])) {
-          kind = 'cleanup:';
+          kind = "cleanup:";
         }
-        err.message += ` (${kind}line ${line})`;
+        err.message += " (" + kind + "line " + line + ")";
       }
     }
   }
@@ -71,6 +109,7 @@ module.exports = (RED) => {
     const node = this;
     node.name = config.name;
     node.func = config.func;
+    node.outputs = config.outputs
     node.libs = config.libs || [];
     node.outstandingTimers = [];
     node.outstandingIntervals = [];
@@ -78,12 +117,6 @@ module.exports = (RED) => {
 
     if (RED.settings.functionExternalModules !== true && node.libs.length > 0) {
       throw new Error(RED._("function.error.externalModuleNotAllowed"));
-    }
-
-    var handleNodeDoneCall = true;
-
-    if (/node\.done\s*\(\s*\)/.test(node.func)) {
-      handleNodeDoneCall = false;
     }
 
     try {
@@ -110,6 +143,7 @@ module.exports = (RED) => {
         __node__: {
           id: node.id,
           name: node.name,
+          outputCount: node.outputs,
           log: (...args) => {
             node.log(...args);
           },
@@ -124,6 +158,18 @@ module.exports = (RED) => {
           },
           trace: (...args) => {
             node.trace(...args);
+          },
+          send: (result) => {
+            var newMsg = {};
+            newMsg.payload = result;
+            node.send(newMsg);
+            //sendResults(node, id, msgs, cloneMsg);
+          },
+          on: () => {
+            if (arguments[0] === "input") {
+              throw new Error(RED._("function.error.inputListener"));
+            }
+            node.on(...args);
           },
           status: (...args) => {
             node.clearStatus = true;
@@ -233,7 +279,6 @@ module.exports = (RED) => {
                 sandbox[vname] = lib;
               }
             } catch (e) {
-              //TODO: NLS error message
               node.error(RED._("function.error.moduleLoadError", { module: module.spec, error: e.toString() }))
               moduleErrors = true;
             }
@@ -244,38 +289,72 @@ module.exports = (RED) => {
         }
       }
 
-      const funcText = `
-        (function() {
-            var node = {
-                id:__node__.id,
-                name:__node__.name,
-                log:__node__.log,
-                error:__node__.error,
-                warn:__node__.warn,
-                debug:__node__.debug,
-                trace:__node__.trace,
-                status:__node__.status,
-            };\n
-            ${node.func}\n
-        })(__funcSend__);`;
+      const funcText = `var results = null;
+        results = (async function(){
+          var node = {
+          id: __node__.id,
+          name: __node__.name,
+          outputCount: __node__.outputCount,
+          log: __node__.log,
+          error: __node__.error,
+          warn: __node__.warn,
+          debug: __node__.debug,
+          trace: __node__.trace,
+          on: __node__.on,
+          status: __node__.status,
+          send: (msgs, cloneMsg) => { 
+            __node__.send(
+              RED.util.generateId(),
+              msgs,
+              cloneMsg
+            );
+          },
+        };\n
+        ${node.func}\n
+        })();`;
       const context = vm.createContext(sandbox);
-      let funcOpt;
-      let funcScript;
+      node.script = vm.createScript(funcText, createVMOpt(node, ''));
 
-      if (node.func && node.func !== '') {
-        funcOpt = createVMOpt(node, '');
-        funcScript = new vm.Script(funcText, funcOpt);
-        context.__funcSend__ = () => { };
-      }
-
-      node.repeaterSetup = (stateField) => {
-        if (this.repeat && !Number.isNaN(this.repeat) && this.repeat > 0 && funcScript !== '' && this.interval_id === null) {
+      node.repeaterSetup = () => {
+        if (this.repeat && !Number.isNaN(this.repeat) && this.interval_id === null) {
           this.interval_id = setInterval(() => {
-            const newMsg = {};
-            const newValue = funcScript.runInContext(context, funcOpt);
-            RED.util.setMessageProperty(newMsg, stateField, newValue, true);
-            node.send(newMsg);
-            node.emit('input', newMsg);
+            node.script.runInContext(context);
+            context.results.then(function (results) {
+              var newMsg = {};
+              newMsg.payload = results;
+              node.send(newMsg);
+              node.emit('input', newMsg);
+            }).catch(err => {
+              if ((typeof err === "object") && err.hasOwnProperty("stack")) {
+                var index = err.stack.search(/\n\s*at ContextifyScript.Script.runInContext/);
+                err.stack = err.stack.slice(0, index).split('\n').slice(0, -1).join('\n');
+                var stack = err.stack.split(/\r?\n/);
+                var line = 0;
+                var errorMessage;
+                if (stack.length > 0) {
+                  while (line < stack.length && stack[line].indexOf("ReferenceError") !== 0) {
+                    line++;
+                  }
+                  if (line < stack.length) {
+                    errorMessage = stack[line];
+                    var m = /:(\d+):(\d+)$/.exec(stack[line + 1]);
+                    if (m) {
+                      var lineno = Number(m[1]) - 1;
+                      var cha = m[2];
+                      errorMessage += " (line " + lineno + ", col " + cha + ")";
+                    }
+                  }
+                }
+                if (!errorMessage) {
+                  errorMessage = err.toString();
+                }
+                node.error(errorMessage);
+              } else if (typeof err === "string") {
+                node.error(err);
+              } else {
+                node.error(JSON.stringify(err));
+              }
+            });
           }, this.repeat);
           node.outstandingIntervals.push(this.interval_id);
         }
@@ -296,7 +375,7 @@ module.exports = (RED) => {
       }
 
       const html = HTML(config);
-      const done = ui.addWidget({
+      const ui_done = ui.addWidget({
         node,
         group: config.group,
         order: config.order,
@@ -307,38 +386,27 @@ module.exports = (RED) => {
         emitOnlyNewValues: config.unique,
         forwardInputMessages: false,
         storeFrontEndInputAsState: true,
-        convertBack(value) {
-          return value;
-        },
-        beforeEmit(msg) {
-          if (msg) {
-            const newMsg = {};
-            newMsg.socketid = msg.socketid;
-            newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
-            return { msg: newMsg };
-          }
-          return msg;
-        },
+        // convertBack(value) {
+        //   console.log(value);
+        //   return value;
+        // },
+        // beforeEmit(msg) {
+        //   // if (msg) {
+        //   //   const newMsg = {};
+        //   //   newMsg.socketid = msg.socketid;
+        //   //   newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
+        //   //   return { msg: newMsg };
+        //   // }
+        //   return msg;
+        // },
         beforeSend(msg, orig) {
-          if (orig) {
-            const newMsg = {};
-            let newValue = null;
-            if (orig.msg.option.valueType === 'func') {
-              if (node.func && node.func !== '') {
-                newValue = funcScript.runInContext(context, funcOpt);
-                RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
-                node.repeaterSetup(config.stateField);
-              }
-            } else {
-              node.cancelRepeater();
-              newValue = orig.msg.state;
-              RED.util.setMessageProperty(newMsg, config.stateField, newValue, true);
-            }
-            if (config.storestate) {
-              node.context().set('state', orig.msg.option);
-            }
-            return newMsg;
+          if (orig && orig.msg.option.valueType === 'func') {
+            node.repeaterSetup();
+            if (config.storestate) { node.context().set('state', orig.msg.option); }
+          } else {
+            node.cancelRepeater();
           }
+          msg.payload = orig.msg.payload;
           return msg;
         },
         initController: ($scope) => {
@@ -363,11 +431,8 @@ module.exports = (RED) => {
           };
 
           $scope.$watch('msg', (msg) => {
-            if (!msg) {
-              return;
-            }
-            if (msg.state !== undefined) {
-              $scope.inputState = msg.state.toString();
+            if (!msg.topic && msg.payload !== undefined) {
+              $scope.inputState = msg.payload.toString();
             }
           });
 
@@ -416,11 +481,11 @@ module.exports = (RED) => {
                 }
               }
               if ($scope.config.options[divIndex].valueType === 'str') {
-                newMsg.state = newValue;
+                newMsg.payload = newValue;
               }
               if ($scope.config.options[divIndex].valueType === 'num') {
                 newValue = Number(newValue);
-                newMsg.state = newValue;
+                newMsg.payload = newValue;
               }
               if ($scope.config.options[divIndex].valueType === 'bool') {
                 if (newValue === 'true') {
@@ -428,10 +493,10 @@ module.exports = (RED) => {
                 } else {
                   newValue = false;
                 }
-                newMsg.state = newValue;
+                newMsg.payload = newValue;
               }
               if ($scope.config.options[divIndex].valueType === 'func') {
-                newMsg.state = newValue;
+                newMsg.payload = newValue;
               }
               if (sendMsg) {
                 $scope.send(newMsg);
@@ -441,6 +506,12 @@ module.exports = (RED) => {
             }
           };
         },
+      });
+
+      node.on('input', (msg) => {
+        if (typeof msg.topic === 'string' && msg.topic !== '') {
+          this.context().set(msg.topic, msg.payload);
+        }
       });
 
       node.on('close', () => {
@@ -453,8 +524,9 @@ module.exports = (RED) => {
         if (node.clearStatus) {
           node.status({});
         }
-        done();
+        ui_done();
       });
+
     } catch (e) {
       updateErrorInfo(e);
       node.error(e);
@@ -469,10 +541,10 @@ module.exports = (RED) => {
   const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
 
   RED.httpNode.get(fullPath, function (req, res) {
-      var options = {
-          root: __dirname + '/lib/',
-          dotfiles: 'deny'
-      };
-      res.sendFile(req.params[0], options)
+    var options = {
+      root: __dirname + '/lib/',
+      dotfiles: 'deny'
+    };
+    res.sendFile(req.params[0], options)
   });
 };

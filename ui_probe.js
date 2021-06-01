@@ -53,6 +53,7 @@ const path = require('path');
 
     function ProbeNode(config) {
         const node = this;
+        var oldMsg = {};
         try {
             if (checkConfig(node, config)) {
                 if (ui === undefined) {
@@ -95,10 +96,11 @@ const path = require('path');
                     storeFrontEndInputAsState: true,
                     convertBack: function(data) {
                         if (data) {
-                            return data;
+                            return parseFloat(data.value);
                         }
                     },
                     convert: (value, oldValue, msg) => {
+                        oldMsg = msg;
                         if (!oldValue) {
                             oldValue = { plot: [], value: 0 };
                         }
@@ -111,9 +113,17 @@ const path = require('path');
                         var limitOffsetSec = parseInt(config.removeOlder) * parseInt(config.removeOlderUnit);
                         var limitTime = time - (limitOffsetSec * 1000);
                         if (Array.isArray(value)) {
+                            var flag = false;
                             if (value.length === 0) {
                                 value = [];
-                            } else if (!value[0].hasOwnProperty("x") && !value[0].hasOwnProperty("y")) {
+                            } else if (value[0].hasOwnProperty("x") && value[0].hasOwnProperty("y")) {
+                                for (var dd = 0; dd < value.length; dd++) {
+                                    if (isNaN(value[dd].x) || isNaN(value[dd].y)) { flag = true; }
+                                }
+                            } else {
+                                flag = true;
+                            }
+                            if (flag) {
                                 node.warn("Bad data inject");
                                 return;
                             }
