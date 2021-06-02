@@ -365,15 +365,12 @@ module.exports = (RED) => {
         this.interval_id = null;
       };
 
-      config.initOpt = node.context().get('state');
-      if (config.initOpt === undefined) {
-        config.initOpt = config.options[0];
+      if (config.storestate) {
+        config.initOpt = node.context().get('state');
+        if (config.initOpt === undefined) { config.initOpt = config.options[0]; } 
+        if (config.initOpt.valueType === 'func') { node.repeaterSetup(); }
       }
-
-      if (config.initOpt.valueType === 'func' && node.func && node.func !== '') {
-        node.repeaterSetup(config.stateField);
-      }
-
+      
       const html = HTML(config);
       const ui_done = ui.addWidget({
         node,
@@ -386,25 +383,14 @@ module.exports = (RED) => {
         emitOnlyNewValues: config.unique,
         forwardInputMessages: false,
         storeFrontEndInputAsState: true,
-        // convertBack(value) {
-        //   console.log(value);
-        //   return value;
-        // },
-        // beforeEmit(msg) {
-        //   // if (msg) {
-        //   //   const newMsg = {};
-        //   //   newMsg.socketid = msg.socketid;
-        //   //   newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
-        //   //   return { msg: newMsg };
-        //   // }
-        //   return msg;
-        // },
         beforeSend(msg, orig) {
+          if (config.storestate) { node.context().set('state', orig.msg.option); }
           if (orig && orig.msg.option.valueType === 'func') {
             node.repeaterSetup();
-            if (config.storestate) { node.context().set('state', orig.msg.option); }
+            orig._dontSend = true;
           } else {
             node.cancelRepeater();
+            newMsg = {};
           }
           msg.payload = orig.msg.payload;
           return msg;
@@ -429,12 +415,6 @@ module.exports = (RED) => {
             });
             switchStateChanged(config.initOpt.value, false);
           };
-
-          $scope.$watch('msg', (msg) => {
-            if (!msg.topic && msg.payload !== undefined) {
-              $scope.inputState = msg.payload.toString();
-            }
-          });
 
           const txtClassToStandOut = (bgColor, light, dark) => {
             const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
@@ -473,6 +453,7 @@ module.exports = (RED) => {
             if (divIndex >= 0) {
               let percentage = '0%';
               newMsg.option = $scope.config.options[divIndex];
+              $scope.inputState = $scope.config.options[divIndex].label;
               if ($scope.config.options.length > 0 && divIndex >= 0) {
                 percentage = (100 / $scope.config.options.length) * divIndex;
                 $scope.sliderDivElement.style.left = `${percentage}%`;
@@ -496,7 +477,7 @@ module.exports = (RED) => {
                 newMsg.payload = newValue;
               }
               if ($scope.config.options[divIndex].valueType === 'func') {
-                newMsg.payload = newValue;
+                newMsg.payload = null;
               }
               if (sendMsg) {
                 $scope.send(newMsg);
@@ -505,6 +486,23 @@ module.exports = (RED) => {
               console.log(`No radio button has value '${newValue}'`);
             }
           };
+          
+          $scope.$watch('msg', (msg) => {
+            console.log(msg);
+            if (msg.hasOwnProperty('_toFront') && msg._toFront === true) {
+              let divIndex = -1;
+              $scope.config.options.forEach((option, index) => {
+                if (option.value === msg.payload) {
+                  divIndex = index;
+                }
+              });
+              if (divIndex >= 0) {
+                $scope.inputState = $scope.config.options[divIndex].label.toString();
+              } else {
+                $scope.inputState = msg.payload.toString();
+              }
+            }
+          });
         },
       });
 
