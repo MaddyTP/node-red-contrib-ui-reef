@@ -111,6 +111,7 @@ module.exports = (RED) => {
     node.func = config.func;
     node.outputs = config.outputs
     node.libs = config.libs || [];
+    node.unique = config.uniqueValue;
     node.outstandingTimers = [];
     node.outstandingIntervals = [];
     node.clearStatus = false;
@@ -322,6 +323,7 @@ module.exports = (RED) => {
             context.results.then(function (results) {
               var newMsg = {};
               newMsg.payload = results;
+              newMsg._msgid = RED.util.generateId();
               node.send(newMsg);
               node.emit('input', newMsg);
             }).catch(err => {
@@ -380,17 +382,23 @@ module.exports = (RED) => {
         height: config.height,
         format: html,
         templateScope: 'local',
-        emitOnlyNewValues: config.unique,
+        emitOnlyNewValues: config.uniqueValue,
         forwardInputMessages: false,
         storeFrontEndInputAsState: true,
-        beforeSend(msg, orig) {
+        beforeEmit: (msg, value) => {
+          return { msg: {
+              payload: value,
+              _toFront: true,
+              socketid: msg.socketid
+          }};
+        },
+        beforeSend: (msg, orig) => {
           if (config.storestate) { node.context().set('state', orig.msg.option); }
           if (orig && orig.msg.option.valueType === 'func') {
-            node.repeaterSetup();
+            node.repeaterSetup(msg);
             orig._dontSend = true;
           } else {
             node.cancelRepeater();
-            newMsg = {};
           }
           msg.payload = orig.msg.payload;
           return msg;
@@ -488,8 +496,7 @@ module.exports = (RED) => {
           };
           
           $scope.$watch('msg', (msg) => {
-            console.log(msg);
-            if (msg.hasOwnProperty('_toFront') && msg._toFront === true) {
+            if (msg && msg._toFront) {
               let divIndex = -1;
               $scope.config.options.forEach((option, index) => {
                 if (option.value === msg.payload) {
@@ -507,7 +514,7 @@ module.exports = (RED) => {
       });
 
       node.on('input', (msg) => {
-        if (typeof msg.topic === 'string' && msg.topic !== '') {
+        if (msg.topic && msg.payload) {
           this.context().set(msg.topic, msg.payload);
         }
       });
