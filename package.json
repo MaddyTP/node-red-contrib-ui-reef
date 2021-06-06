@@ -20,9 +20,9 @@
   "homepage": "https://github.com/MaddyTP/node-red-contrib-ui-reef#readme",
   "node-red": {
     "nodes": {
+      "ui_probe": "ui_probe.js",
       "ui_output": "ui_output.js",
-      "ui_input": "ui_input.js",
-      "ui_probe": "ui_probe.js"
+      "ui_input": "ui_input.js"
     }
   },
   "dependencies": {
@@ -30,9 +30,5 @@
     "chartjs-adapter-moment": "^1.0.0",
     "moment": "^2.29.1"
   },
-  "devDependencies": {
-    "eslint": "^7.25.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1"
-  }
+  "devDependencies": {}
 }

@@ -32,25 +32,7 @@
     </div>
 </script>
 <script type="text/html" data-help-name="ui_input">
-    <p>A Node Red node to show a switch with multiple states in the Node-RED dashboard.</p>
-    <p><strong>Label:</strong><br/>
-    The label this will be displayed on the left side of the button.</p>
-    <p><strong>State:</strong><br/>
-    The field in the input and output message this will contain the new switch state.</p>
-    <p><strong>Input:</strong><br/>
-    The field in the input message this will contain the outlet current state.</p>
-    <p><strong>Rounded:</strong><br/>
-    Specify whether the shape of the widget should be rectangular or having rounded corners.</p>
-    <p><strong>Use theme colors:</strong><br/>
-    Specify whether the theme colors should be used.  If not active, custom colors can be specified for each option separately.</p>
-    <p>Note this this option can dynamically be overridden by input messages with <code>msg.topic="enable"</code> or <code>msg.topic="disable"</code>.</p>
-    <p><strong>Options:</strong><br/>
-    Specify which options need to be displayed:
-        <ul>
-            <li><i>Label: </i>The description this will be displayed.</li>
-            <li><i>Value: </i>The value this will be send in input and output messages.</li>
-            <li><i>Value: </i>The color of the option in the switch.</li>
-        </ul></p>
+    <p>A UI node to show a switch state in the Node-RED dashboard.</p>
 </script>
 
 <script type="text/javascript">
@@ -87,7 +69,7 @@
         },
         inputs: 1,
         outputs: 0,
-        icon: "clownfish.png",
+        icon: "ui_switch.png",
         align: 'right',
         paletteLabel: "input",
         label: function () {

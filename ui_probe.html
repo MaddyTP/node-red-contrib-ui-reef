@@ -29,6 +29,9 @@
         </select>
     </div>
 </script>
+<script type="text/html" data-help-name="ui_probe">
+    <p>A UI node to display probe value in the Node-RED dashboard.</p>
+</script>
 
 <script type="text/javascript">
     RED.nodes.registerType('ui_probe', {
@@ -57,8 +60,8 @@
         },
         inputs: 1,
         outputs: 1,
-        icon: "clownfish.png",
-        align: 'right',
+        icon: "ui_chart.png",
+        align: 'left',
         paletteLabel: "probe",
         label: function () {
             return this.name || (~this.label.indexOf("{{") ? null : this.label) || "probe";

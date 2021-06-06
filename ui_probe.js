@@ -9,7 +9,6 @@
             return true;
         }
     }
-    
     function HTML(config) {
         config.id = config.id.replace('.', '_');
         const configAsJson = JSON.stringify(config);
@@ -30,9 +29,7 @@
        `;
         return html;
     }
-
     let ui;
-
     function ProbeNode(config) {
         const node = this;
         var oldMsg = {};
@@ -41,15 +38,12 @@
                 if (ui === undefined) {
                     ui = RED.require('node-red-dashboard')(RED);
                 }
-
                 config.dark = false;
                 if (typeof ui.isDark === 'function') {
                     config.dark = ui.isDark();
                     config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
                 }
-
                 RED.nodes.createNode(this, config);
-
                 node.convertNum = (val) => {
                     if (val.toString().indexOf('.') !== -1) {
                         var lgth = val.toString().split('.')[0].length;
@@ -63,7 +57,6 @@
                     }
                     return val;
                 };
-
                 const html = HTML(config);
                 const done = ui.addWidget({
                     node,
@@ -170,7 +163,7 @@
                                         easing: 'linear',
                                     },
                                     layout: {
-                                        padding: 10,
+                                        padding: 5,
                                     },
                                     plugins: {
                                         legend: {
