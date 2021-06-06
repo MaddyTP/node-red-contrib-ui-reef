@@ -31,4 +31,5 @@ npm install --unsafe-perm node-red-contrib-ui-reef
 These nodes would not be possible without the work of the following:
 
 * barbutenaers / hotNipi - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
-* The Node-Red Team - chart and function nodes
+* Node-Red Team - Function node
+* Node-Red-Dashboard Team - Chart node
