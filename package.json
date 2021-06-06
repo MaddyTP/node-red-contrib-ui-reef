@@ -10,7 +10,8 @@
     "node-red",
     "reef",
     "aquarium",
-    "ui"
+    "ui",
+    "dashboard"
   ],
   "author": "MaddyTP",
   "license": "MIT",

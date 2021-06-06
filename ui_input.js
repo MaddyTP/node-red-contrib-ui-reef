@@ -28,24 +28,19 @@ module.exports = (RED) => {
         `;
         return html;
     }
-
     let ui;
-
     function InputNode(config) {
         const node = this;
         try {
             if (ui === undefined) {
                 ui = RED.require('node-red-dashboard')(RED);
             }
-
             config.dark = false;
             if (typeof ui.isDark === 'function') {
                 config.dark = ui.isDark();
                 config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
             }
-
             RED.nodes.createNode(this, config);
-
             const html = HTML(config);
             const done = ui.addWidget({
                 node,
@@ -58,9 +53,6 @@ module.exports = (RED) => {
                 emitOnlyNewValues: false,
                 forwardInputMessages: false,
                 storeFrontEndInputAsState: true,
-                convertBack(value) {
-                    return value;
-                },
                 beforeEmit(msg) {
                     if (msg) {
                         const newMsg = {};
@@ -68,10 +60,6 @@ module.exports = (RED) => {
                         newMsg.state = RED.util.getMessageProperty(msg, config.stateField || 'payload');
                         return { msg: newMsg };
                     }
-                    return msg;
-                },
-                beforeSend(msg, orig) {
-                    return msg;
                 },
                 initController: ($scope) => {
                     $scope.flag = true;
@@ -91,10 +79,7 @@ module.exports = (RED) => {
                     };
 
                     $scope.$watch('msg', (msg) => {
-                        if (!msg) {
-                            return;
-                        }
-                        if (msg.state !== undefined) {
+                        if (msg && msg.state !== undefined) {
                             switchStateChanged(msg.state.toString());
                         }
                     });
@@ -138,7 +123,6 @@ module.exports = (RED) => {
 
                 },
             });
-
             node.on('close', () => {
                 done();
             });
@@ -147,10 +131,8 @@ module.exports = (RED) => {
         }
     }
     RED.nodes.registerType('ui_input', InputNode);
-
     const uipath = RED.settings.ui.path || 'ui';
     const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
-
     RED.httpNode.get(fullPath, function (req, res) {
         var options = {
             root: __dirname + '/lib/',
