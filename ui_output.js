@@ -1,4 +1,3 @@
-/* eslint-disable import/no-dynamic-require */
 module.exports = (RED) => {
   const util = require('util');
   const vm = require('vm');
@@ -36,44 +35,6 @@ module.exports = (RED) => {
       `;
     return html;
   }
-
-  // function sendResults(node, _msgid, msgs, cloneFirstMessage) {
-  //   if (msgs == null) {
-  //     return;
-  //   } else if (!Array.isArray(msgs)) {
-  //     msgs = [msgs];
-  //   }
-  //   var msgCount = 0;
-  //   for (var m = 0; m < msgs.length; m++) {
-  //     if (msgs[m]) {
-  //       if (!Array.isArray(msgs[m])) {
-  //         msgs[m] = [msgs[m]];
-  //       }
-  //       for (var n = 0; n < msgs[m].length; n++) {
-  //         var msg = msgs[m][n];
-  //         if (msg !== null && msg !== undefined) {
-  //           if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !Array.isArray(msg)) {
-  //             if (msgCount === 0 && cloneFirstMessage !== false) {
-  //               msgs[m][n] = RED.util.cloneMessage(msgs[m][n]);
-  //               msg = msgs[m][n];
-  //             }
-  //             msg._msgid = _msgid;
-  //             msgCount++;
-  //           } else {
-  //             var type = typeof msg;
-  //             if (type === 'object') {
-  //               type = Buffer.isBuffer(msg) ? 'Buffer' : (Array.isArray(msg) ? 'Array' : 'Date');
-  //             }
-  //             node.error(RED._("function.error.non-message-returned", { type: type }));
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   if (msgCount > 0) {
-  //     node.send(msgs);
-  //   }
-  // }
 
   function createVMOpt(node, kind) {
     var opt = {
@@ -295,7 +256,6 @@ module.exports = (RED) => {
           var node = {
           id: __node__.id,
           name: __node__.name,
-          outputCount: __node__.outputCount,
           log: __node__.log,
           error: __node__.error,
           warn: __node__.warn,
@@ -303,13 +263,6 @@ module.exports = (RED) => {
           trace: __node__.trace,
           on: __node__.on,
           status: __node__.status,
-          send: (msgs, cloneMsg) => { 
-            __node__.send(
-              RED.util.generateId(),
-              msgs,
-              cloneMsg
-            );
-          },
         };\n
         ${node.func}\n
         })();`;
