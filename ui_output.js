@@ -51,12 +51,6 @@ module.exports = (RED) => {
       if (m) {
         var line = parseInt(m[3]) - 1;
         var kind = "body:";
-        if (/setup/.exec(m[1])) {
-          kind = "setup:";
-        }
-        if (/cleanup/.exec(m[1])) {
-          kind = "cleanup:";
-        }
         err.message += " (" + kind + "line " + line + ")";
       }
     }
@@ -69,6 +63,7 @@ module.exports = (RED) => {
     this.repeat = config.repeat * 1000;
     const node = this;
     node.name = config.name;
+    node.label = config.label;
     node.func = config.func;
     node.outputs = config.outputs
     node.libs = config.libs || [];
@@ -105,7 +100,6 @@ module.exports = (RED) => {
         __node__: {
           id: node.id,
           name: node.name,
-          outputCount: node.outputs,
           log: (...args) => {
             node.log(...args);
           },
@@ -125,7 +119,6 @@ module.exports = (RED) => {
             var newMsg = {};
             newMsg.payload = result;
             node.send(newMsg);
-            //sendResults(node, id, msgs, cloneMsg);
           },
           on: () => {
             if (arguments[0] === "input") {
