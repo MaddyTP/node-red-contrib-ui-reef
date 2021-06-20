@@ -278,6 +278,7 @@ module.exports = (RED) => {
               newMsg.payload = results;
               newMsg._msgid = RED.util.generateId();
               node.send(newMsg);
+              newMsg._toFront = true;
               node.emit('input', newMsg);
             }).catch(err => {
               if ((typeof err === "object") && err.hasOwnProperty("stack")) {
@@ -339,11 +340,8 @@ module.exports = (RED) => {
         forwardInputMessages: false,
         storeFrontEndInputAsState: true,
         beforeEmit: (msg, value) => {
-          return { msg: {
-              payload: value,
-              _toFront: true,
-              socketid: msg.socketid
-          }};
+          msg.payload = value;
+          return { msg };
         },
         beforeSend: (msg, orig) => {
           if (config.storestate) { node.context().set('state', orig.msg.option); }
@@ -449,7 +447,7 @@ module.exports = (RED) => {
           };
           
           $scope.$watch('msg', (msg) => {
-            if (msg && msg._toFront) {
+            if (msg && msg._toFront === true) {
               let divIndex = -1;
               $scope.config.options.forEach((option, index) => {
                 if (option.value === msg.payload) {
@@ -467,7 +465,7 @@ module.exports = (RED) => {
       });
 
       node.on('input', (msg) => {
-        if (msg.topic && msg.payload) {
+        if (msg.topic !== undefined && msg.payload !== undefined) {
           this.context().set(msg.topic, msg.payload);
         }
       });
