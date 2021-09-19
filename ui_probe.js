@@ -164,7 +164,7 @@
                                         easing: 'linear',
                                     },
                                     layout: {
-                                        padding: 10,
+                                        padding: 15,
                                     },
                                     plugins: {
                                         legend: {
