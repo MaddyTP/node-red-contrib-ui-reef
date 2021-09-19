@@ -28,7 +28,27 @@
             <option value="604800">Weeks</option>
         </select>
     </div>
+    <div class="form-row" id="x-axis-show">
+        <label for="node-input-decimal">Rounding</label>
+        <input type="text" id="node-input-decimal" style="width:50px;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-scale"><i class='fa fa-sign-out'></i> Scale</label>
+        <input type="checkbox" id="node-input-scale" style='width: auto; border: none; vertical-align: baseline;'>
+        <span for='node-input-scale' style="padding-left: 5px;">Map value to range?</span>
+    </div>
+    <div class="form-row inp-lbl-row"><i class="fa fa-sign-in"></i> Input Range:</div>
+    <div class="form-row inp-row"><label></label>
+        From: <input type="text" id="node-input-minin" style="width:100px;"/>
+        &nbsp;&nbsp;To: <input type="text" id="node-input-maxin" style="width:100px;"/>
+    </div>
+    <div class="form-row outp-lbl-row"><i class="fa fa-sign-out"></i> Output Range:</div>
+    <div class="form-row outp-row"><label></label>
+        From: <input type="text" id="node-input-minout" style="width:100px;"/>
+        &nbsp;&nbsp;To: <input type="text" id="node-input-maxout" style="width:100px;"/>
+    </div>
 </script>
+
 <script type="text/html" data-help-name="ui_probe">
     <p>A UI node to display probe value in the Node-RED dashboard.</p>
 </script>
@@ -55,8 +75,50 @@
             },
             height: { value: 2 },
             label: { value: 'probe' },
-            removeOlder: {value: 1, validate:RED.validators.number(), required: true},
-            removeOlderUnit: {value: '3600', required: true},
+            removeOlder: { value: 1, validate:RED.validators.number(), required: true },
+            removeOlderUnit: { value: '3600', required: true },
+            decimal: { value: 0, validate:RED.validators.number(), required: true },
+            scale: { value: false },
+            minin: { 
+                value:'' ,
+                validate: function (v) {
+                    if ($('#node-input-scale').val() === true) {
+                        return (RED.validators.number(v));
+                    } else {
+                        return true;
+                    }
+                }
+            },
+            maxin: { 
+                value:'' ,
+                validate: function (v) {
+                    if ($('#node-input-scale').val()) {
+                        return (RED.validators.number(v));
+                    } else {
+                        return true;
+                    }
+                }
+            },
+            minout: { 
+                value:'' ,
+                validate: function (v) {
+                    if ($('#node-input-scale').val()) {
+                        return (RED.validators.number(v));
+                    } else {
+                        return true;
+                    }
+                }
+            },
+            maxout: { 
+                value:'' ,
+                validate: function (v) {
+                    if ($('#node-input-scale').val()) {
+                        return (RED.validators.number(v));
+                    } else {
+                        return true;
+                    }
+                }
+            },
         },
         inputs: 1,
         outputs: 1,
@@ -71,16 +133,27 @@
         },
         oneditprepare: function () {
             var that = this;
-
             $("#node-input-size").elementSizer({
                 width: "#node-input-width",
                 group: "#node-input-group"
             });
-
             $("#node-input-valueField").val(this.valueField);
             $('#node-input-valueField').typedInput({
                 types: ['msg'],
                 default: 'msg'
+            });
+            $('#node-input-scale').on("change", function () {
+                if ($(this)[0].checked) {
+                    $('.inp-lbl-row').show();
+                    $('.inp-row').show();
+                    $('.outp-lbl-row').show();
+                    $('.outp-row').show();
+                } else {
+                    $('.inp-lbl-row').hide();
+                    $('.inp-row').hide();
+                    $('.outp-lbl-row').hide();
+                    $('.outp-row').hide();
+                }
             });
         },
         oneditsave: function () {

@@ -64,6 +64,7 @@ module.exports = (RED) => {
     const node = this;
     node.name = config.name;
     node.label = config.label;
+    node.topic = config.topic;
     node.func = config.func;
     node.outputs = config.outputs
     node.libs = config.libs || [];
@@ -314,10 +315,37 @@ module.exports = (RED) => {
         this.interval_id = null;
       };
 
+      node.sendInitial = (val) => {
+          var msg = {};
+          if (config.topic !== undefined && config.topic !== '') msg.topic = config.topic;
+          msg.payload = val;
+          setTimeout(() => {
+            node.send(msg);
+          }, 3000);
+      };
+
       if (config.storestate) {
         config.initOpt = node.context().get('state');
         if (config.initOpt === undefined) { config.initOpt = config.options[0]; } 
-        if (config.initOpt.valueType === 'func') { node.repeaterSetup(); }
+      }
+
+      switch(config.initOpt.valueType) {
+        case ('str'):
+          node.sendInitial(config.initOpt.value);
+          break;
+        case ('num'):
+          node.sendInitial(Number(config.initOpt.value));
+          break;
+        case ('bool'):
+          if (config.initOpt.value === 'true') {
+            node.sendInitial(true);
+          } else {
+            node.sendInitial(false);
+          }
+          break;
+        case ('func'):
+          node.repeaterSetup();
+          break;
       }
       
       const html = HTML(config);
@@ -344,6 +372,7 @@ module.exports = (RED) => {
           } else {
             node.cancelRepeater();
           }
+          if (config.topic !== '') msg.topic = config.topic;
           msg.payload = orig.msg.payload;
           return msg;
         },

@@ -57,6 +57,10 @@
         <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label" style="width: 100%;"></div>
     </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="fa fa-i-cursor"></i> Topic</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-topic" style="width: 100%;"></div>
+    </div>
     <input type="hidden" id="node-input-func">
     <input type="hidden" id="node-input-noerr">
     <div class="form-row func-tabs-row">
@@ -349,6 +353,7 @@
             },
             height: { value: 1 },
             label: { value: 'output' },
+            topic: { value: '' },
             useThemeColors: { value: true },
             uniqueValue: { value: false },
             options: {

@@ -31,6 +31,12 @@
     }
     let ui;
     function ProbeNode(config) {
+        this.decimal = Number(config.decimal);
+        this.scale = config.scale;
+        this.minin = Number(config.minin);
+        this.minout = Number(config.minout);
+        this.maxin = Number(config.maxin);
+        this.maxout = Number(config.maxout);
         const node = this;
         var oldMsg = {};
         try {
@@ -44,19 +50,7 @@
                     config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
                 }
                 RED.nodes.createNode(this, config);
-                node.convertNum = (val) => {
-                    if (val.toString().indexOf('.') !== -1) {
-                        var lgth = val.toString().split('.')[0].length;
-                        if (lgth <= 1) {
-                            return val.toFixed(2);
-                        } else if (lgth === 2) {
-                            return val.toFixed(1);
-                        } else if (lgth >= 3) {
-                            return val.toFixed(0);
-                        }
-                    }
-                    return val;
-                };
+
                 const html = HTML(config);
                 const done = ui.addWidget({
                     node,
@@ -108,6 +102,13 @@
                                 node.warn("Bad data inject");
                                 return;
                             }
+                            var n = Number(value);
+                            if (node.scale) {
+                                if (n < node.minin) { n = node.minin; }
+                                if (n > node.maxin) { n = node.maxin; }
+                                n = ((n - node.minin) / (node.maxin - node.minin) * (node.maxout - node.minout)) + node.minout;
+                            }
+                            value = n.toFixed(node.decimal);
                             if (time >= limitTime) {
                                 var point = { "x":time, "y":value };
                                 oldValue.plot.push(point);
@@ -117,14 +118,14 @@
                         var latestValue = 0;
                         for (var u = 0; u < oldValue.plot.length; u++) {
                             if (oldValue.plot[u][0] >= limitTime || oldValue.plot[u].x >= limitTime) { 
-                                tmp.push(oldValue.plot[u]);
+                                tmp.push( oldValue.plot[u] );
                             }
                             if (oldValue.plot[u][0] > latestValue || oldValue.plot[u].x >= latestValue) { 
                                 latestValue = oldValue.plot[u].y;
                             }
                         }
                         oldValue.plot = tmp;
-                        oldValue.value = node.convertNum(latestValue);
+                        oldValue.value = latestValue;
                         value = oldValue;
                         return value;
                     },
