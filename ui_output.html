@@ -101,11 +101,11 @@
             <div class="form-row">
                 <label for=""><i class="fa fa-repeat"></i> Interval:</label>
                 <input id="inject-time-interval-count" class="inject-time-count" value="1">
-                <select style="width:150px" id="inject-time-interval-units">
+                <!-- <select style="width:150px" id="inject-time-interval-units">
                     <option value="s">Seconds</option>
                     <option value="m">Minutes</option>
                     <option value="h">Hours</option>
-                </select><br/>
+                </select><br/> -->
             </div>
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 220px; min-height:150px;" class="node-text-editor" id="node-input-func-editor" ></div>
@@ -487,12 +487,12 @@
                 min: 1
             });
 
-            var r = "s";
+            //var r = "s";
             var c = this.repeat;
-            if (this.repeat % 60 === 0) { r = "m"; c = c / 60; }
-            if (this.repeat % 1440 === 0) { r = "h"; c = c / 60; }
+            //if (this.repeat % 60 === 0) { r = "m"; c = c / 60; }
+            //if (this.repeat % 1440 === 0) { r = "h"; c = c / 60; }
             $("#inject-time-interval-count").val(c);
-            $("#inject-time-interval-units").val(r);
+            //$("#inject-time-interval-units").val(r);
 
             var tabs = RED.tabs.create({
                 id: "func-tabs",
@@ -623,18 +623,18 @@
                 node.options.push({ label: label, value: value, valueType: valueType, color: color });
             });
 
-            var repeat = 0;
+            //var repeat = 0;
             var count = $("#inject-time-interval-count").val();
-            var units = $("#inject-time-interval-units").val();
-            if (units == "s") {
+            //var units = $("#inject-time-interval-units").val();
+            //if (units == "s") {
                 node.repeat = count;
-            } else {
-                if (units == "m") {
-                    node.repeat = count * 60;
-                } else if (units == "h") {
-                    node.repeat = count * 60 * 60;
-                }
-            }
+            //} else {
+                //if (units == "m") {
+                    //node.repeat = count * 60;
+                //} else if (units == "h") {
+                    //node.repeat = count * 60 * 60;
+                //}
+            //}
 
             var noerr = 0;
             $("#node-input-noerr").val(0);

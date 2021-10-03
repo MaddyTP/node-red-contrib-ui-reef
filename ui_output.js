@@ -60,7 +60,7 @@ module.exports = (RED) => {
 
   function OutletNode(config) {
     this.interval_id = null;
-    this.repeat = config.repeat * 1000;
+    this.repeat = config.repeat;
     const node = this;
     node.name = config.name;
     node.label = config.label;
