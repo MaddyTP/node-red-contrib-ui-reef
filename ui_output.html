@@ -7,45 +7,67 @@
             padding: 0px;
         }
         #node-input-libs-container-row .red-ui-editableList-container li {
-            padding:5px;
+            padding:0px;
         }
         #node-input-libs-container-row .red-ui-editableList-item-remove {
             right: 5px;
         }
+        #node-input-libs-container-row .red-ui-editableList-header {
+            display: flex;
+            background: var(--red-ui-tertiary-background);
+            padding-right: 75px;
+        }
+        #node-input-libs-container-row .red-ui-editableList-header > div {
+            flex-grow: 1;
+        }
         .node-libs-entry {
             display: flex;
         }
-        .node-libs-entry .node-input-libs-var, .node-libs-entry .red-ui-typedInput-container {
-            flex-grow: 1;
-        }
-        .node-libs-entry > code,.node-libs-entry > span  {
-            line-height: 30px;
-        }
-        .node-libs-entry > input[type=text] {
+        .node-libs-entry .red-ui-typedInput-container {
             border-radius: 0;
-            border-left: none;
-            border-top: none;
-            border-right: none;
-            padding-top: 2px;
-            padding-bottom: 2px;
-            margin-top: 4px;
-            margin-bottom: 2px;
-            height: 26px;
+            border: none;
         }
-        .node-libs-entry > span > i {
+        .node-libs-entry .red-ui-typedInput-type-select {
+            border-radius: 0 !important;
+            height: 34px;
+        }
+        .node-libs-entry > span > input[type=text] {
+            border-radius: 0;
+            border-top-color: var(--red-ui-form-background);
+            border-bottom-color: var(--red-ui-form-background);
+            border-right-color: var(--red-ui-form-background);
+        }
+        .node-libs-entry > span > input[type=text].input-error {
+        }
+        .node-libs-entry > span {
+            flex-grow: 1;
+            width: 50%;
+            position: relative;
+        }
+        .node-libs-entry span .node-input-libs-var, .node-libs-entry span .red-ui-typedInput-container {
+            width: 100%;
+        }
+        .node-libs-entry > span > span > i {
             display: none;
         }
-        .node-libs-entry > span.input-error > i {
+        .node-libs-entry > span > span.input-error > i {
             display: inline;
         }
     </style>
+    <input type="hidden" id="node-input-func">
+    <input type="hidden" id="node-input-noerr">
+    <input type="hidden" id="node-input-finalize">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-name"></div>
     </div>
     <div class="form-row">
+        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
+    </div>
+    <div class="form-row">
         <label for="node-input-group"><i class="fa fa-table"></i> Group</span></label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group" style="width: 100%;"></div>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group"></div>
     </div>    
     <div class="form-row" id="template-row-size">
         <label><i class="fa fa-object-group"></i> Size</span></label>
@@ -53,26 +75,11 @@
         <input type="hidden" id="node-input-height">
         <button class="editor-button" id="node-input-size"></button>
     </div>
-    <div class="form-row">
-        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label" style="width: 100%;"></div>
-    </div>
-    <div class="form-row">
-        <label for="node-input-topic"><i class="fa fa-i-cursor"></i> Topic</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-topic" style="width: 100%;"></div>
-    </div>
-    <input type="hidden" id="node-input-func">
-    <input type="hidden" id="node-input-noerr">
     <div class="form-row func-tabs-row">
         <ul style="min-width: 600px; margin-bottom: 20px;" id="func-tabs"></ul>
     </div>
-    <div id="func-tabs-content">
-        <div id="func-tab-option" style="display:none">
-            <div class="form-row">
-                <label for="node-input-unique"><i class='fa fa-sign-out'></i> Output</label>
-                <input type="checkbox" id="node-input-unique" style='width: auto; border: none; vertical-align: baseline;'>
-                <span for='node-input-unique' style="padding-left: 5px;">Unique values only?</span>
-            </div>
+    <div id="func-tabs-content" style="min-height: calc(100% - 220px);">
+        <div id="func-tab-config" style="display:none">
             <div class="form-row">
                 <label for="node-input-storestate"><i class='fa fa-history'></i> Restore</label>
                 <input type="checkbox" id="node-input-storestate" style='width: auto; border: none; vertical-align: baseline;'>
@@ -83,6 +90,14 @@
                 <input type='checkbox' id='node-input-useThemeColors' style='width: auto; border: none; vertical-align: baseline;'>
                 <span for='node-input-useThemeColors' style="padding-left: 5px;">Use theme colors?</span>
             </div>
+            <div class="form-row">
+                <label for="node-input-outputs"><i class="fa fa-random"></i> Outputs:</label>
+                <input id="node-input-outputs" style="width: 60px;" value="1">
+            </div>
+            <div class="form-row">
+                <label for=""><i class="fa fa-repeat"></i> Interval:</label>
+                <input id="inject-time-interval-count" style="width: 60px;" value="1000">
+            </div>
             <div class="form-row" style="margin-bottom:0;">
                 <label><i class="fa fa-list"></i> Options:</label>
             </div>
@@ -90,26 +105,26 @@
                 <span id="configError" style="color:#DD0000"><b>All Values must be unique.</b></span>
                 <ol id="node-input-opts-container"></ol>
             </div>
-            <div class="form-row" style="margin-bottom:0;">
+            <div class="form-row node-input-libs-row hide" style="margin-bottom: 0px;">
                 <label><i class="fa fa-cubes"></i> Modules:</label>
             </div>
-            <div class="form-row" id="node-input-libs-container-row">
+            <div class="form-row node-input-libs-row hide" id="node-input-libs-container-row">
                 <ol id="node-input-libs-container"></ol>
             </div>
         </div>
         <div id="func-tab-body" style="display:none">
             <div class="form-row">
-                <label for=""><i class="fa fa-repeat"></i> Interval:</label>
-                <input id="inject-time-interval-count" class="inject-time-count" value="1">
-                <!-- <select style="width:150px" id="inject-time-interval-units">
-                    <option value="s">Seconds</option>
-                    <option value="m">Minutes</option>
-                    <option value="h">Hours</option>
-                </select><br/> -->
+
             </div>
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 220px; min-height:150px;" class="node-text-editor" id="node-input-func-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 10;"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
+                <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
+            </div>
+        </div>
+        <div id="func-tab-finalize" style="display:none">
+            <div class="form-row node-text-editor-row" style="position:relative">
+                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-finalize-editor" ></div>
+                <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-finalize-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
         </div>
     </div>
@@ -119,591 +134,622 @@
 </script>
 
 <script type="text/javascript">
+(function () {
+  const invalidModuleVNames = [
+    'console',
+    'util',
+    'Buffer',
+    'Date',
+    'RED',
+    'node',
+    '__node__',
+    'context',
+    'flow',
+    'global',
+    'env',
+    'setTimeout',
+    'clearTimeout',
+    'setInterval',
+    'clearInterval',
+    'promisify',
+  ];
 
-    var invalidModuleVNames = [
-        'console',
-        'util',
-        'Buffer',
-        'Date',
-        'RED',
-        'node',
-        '__node__',
-        'context',
-        'flow',
-        'global',
-        'env',
-        'setTimeout',
-        'clearTimeout',
-        'setInterval',
-        'clearInterval',
-        'promisify'
-    ]
+  const knownFunctionNodes = {};
+  RED.events.on('nodes:add', function (n) {
+    if (n.type === 'function') {
+      knownFunctionNodes[n.id] = n;
+    }
+  });
+  RED.events.on('nodes:remove', function (n) {
+    if (n.type === 'function') {
+      delete knownFunctionNodes[n.id];
+    }
+  });
 
-    var knownFunctionNodes = {};
-    RED.events.on("nodes:add", function (n) {
-        if (n.type === "function") {
-            knownFunctionNodes[n.id] = n;
+  let missingModules = [];
+  let missingModuleReasons = {};
+  RED.events.on('runtime-state', function (event) {
+    if (event.error === 'missing-modules') {
+      missingModules = event.modules.map(function (m) { missingModuleReasons[m.module] = m.error; return m.module; });
+      for (const id in knownFunctionNodes) {
+        if (knownFunctionNodes.hasOwnProperty(id) && knownFunctionNodes[id].libs && knownFunctionNodes[id].libs.length > 0) {
+          RED.editor.validateNode(knownFunctionNodes[id]);
         }
-    })
-    RED.events.on("nodes:remove", function (n) {
-        if (n.type === "function") {
-            delete knownFunctionNodes[n.id];
+      }
+    } else if (!event.text) {
+      missingModuleReasons = {};
+      missingModules = [];
+      for (const id in knownFunctionNodes) {
+        if (knownFunctionNodes.hasOwnProperty(id) && knownFunctionNodes[id].libs && knownFunctionNodes[id].libs.length > 0) {
+          RED.editor.validateNode(knownFunctionNodes[id]);
         }
-    })
+      }
+    }
+    RED.view.redraw();
+  });
 
-    var missingModules = [];
-    var missingModuleReasons = {};
-    RED.events.on("runtime-state", function (event) {
-        if (event.error === "missing-modules") {
-            missingModules = event.modules.map(function (m) { missingModuleReasons[m.module] = m.error; return m.module });
-            for (var id in knownFunctionNodes) {
-                if (knownFunctionNodes.hasOwnProperty(id) && knownFunctionNodes[id].libs && knownFunctionNodes[id].libs.length > 0) {
-                    RED.editor.validateNode(knownFunctionNodes[id])
-                }
+  let installAllowList = ['*'];
+  let installDenyList = [];
+
+  let modulesEnabled = true;
+  if (RED.settings.get('externalModules.modules.allowInstall', true) === false) {
+    modulesEnabled = false;
+  }
+  const settingsAllowList = RED.settings.get('externalModules.modules.allowList');
+  const settingsDenyList = RED.settings.get('externalModules.modules.denyList');
+  if (settingsAllowList || settingsDenyList) {
+    installAllowList = settingsAllowList;
+    installDenyList = settingsDenyList;
+  }
+  installAllowList = RED.utils.parseModuleList(installAllowList);
+  installDenyList = RED.utils.parseModuleList(installDenyList);
+
+  const allLibs = [];
+
+  function moduleName(module) {
+    const match = /^([^@]+)@(.+)/.exec(module);
+    if (match) {
+      return [match[1], match[2]];
+    }
+    return [module, undefined];
+  }
+
+  function getAllUsedModules() {
+    const moduleSet = new Set();
+    for (const id in knownFunctionNodes) {
+      if (knownFunctionNodes.hasOwnProperty(id)) {
+        if (knownFunctionNodes[id].libs) {
+          for (let i = 0, l = knownFunctionNodes[id].libs.length; i < l; i += 1) {
+            if (RED.utils.checkModuleAllowed(knownFunctionNodes[id].libs[i].module, null, installAllowList, installDenyList)) {
+              moduleSet.add(knownFunctionNodes[id].libs[i].module);
             }
-        } else if (!event.text) {
-            missingModuleReasons = {};
-            missingModules = [];
-            for (var id in knownFunctionNodes) {
-                if (knownFunctionNodes.hasOwnProperty(id) && knownFunctionNodes[id].libs && knownFunctionNodes[id].libs.length > 0) {
-                    RED.editor.validateNode(knownFunctionNodes[id])
-                }
-            }
+          }
         }
-        RED.view.redraw();
+      }
+    }
+    const modules = Array.from(moduleSet);
+    modules.sort();
+    return modules;
+  }
+
+  function prepareLibraryConfig(node) {
+    $('.node-input-libs-row').show();
+    const usedModules = getAllUsedModules();
+    const typedModules = usedModules.map(function (l) {
+      return {
+        icon: 'fa fa-cube', value: l, label: l, hasValue: false,
+      };
+    });
+    typedModules.push({
+      value: '_custom_', label: RED._('editor:subflow.licenseOther'), icon: 'red/images/typedInput/az.svg',
     });
 
-    var installAllowList = ['*'];
-    var installDenyList = [];
-
-    var modulesEnabled = true;
-    if (RED.settings.get('externalModules.modules.allowInstall', true) === false) {
-        modulesEnabled = false;
-    }
-    var settingsAllowList = RED.settings.get("externalModules.modules.allowList")
-    var settingsDenyList = RED.settings.get("externalModules.modules.denyList")
-    if (settingsAllowList || settingsDenyList) {
-        installAllowList = settingsAllowList;
-        installDenyList = settingsDenyList
-    }
-    installAllowList = RED.utils.parseModuleList(installAllowList);
-    installDenyList = RED.utils.parseModuleList(installDenyList);
-
-    var allLibs = [];
-
-    function moduleName(module) {
-        var match = /^([^@]+)@(.+)/.exec(module);
-        if (match) {
-            return [match[1], match[2]];
+    const libList = $('#node-input-libs-container').css('min-height', '200px').css('min-width', '450px').editableList({
+      header: $('<div><div data-i18n="node-red:function.require.moduleName"></div><div data-i18n="node-red:function.require.importAs"></div></div>'),
+      addItem(container, i, opt) {
+        const parent = container.parent();
+        const row0 = $('<div/>').addClass('node-libs-entry').appendTo(container);
+        const fmoduleSpan = $('<span>').appendTo(row0);
+        const fmodule = $('<input/>', {
+          class: 'node-input-libs-val',
+          placeholder: RED._('node-red:function.require.module'),
+          type: 'text',
+        }).css({
+        }).appendTo(fmoduleSpan).typedInput({
+          types: typedModules,
+          default: usedModules.indexOf(opt.module) > -1 ? opt.module : '_custom_',
+        });
+        if (usedModules.indexOf(opt.module) === -1) {
+          fmodule.typedInput('value', opt.module);
         }
-        return [module, undefined];
-    }
+        const moduleWarning = $('<span style="position: absolute;right:2px;top:7px; display:inline-block; width: 16px;"><i class="fa fa-warning"></i></span>').appendTo(fmoduleSpan);
+        RED.popover.tooltip(moduleWarning.find('i'), function () {
+          let val = fmodule.typedInput('type');
+          if (val === '_custom_') {
+            val = fmodule.val();
+          }
+          const errors = [];
 
-    function getAllUsedModules() {
-        var moduleSet = new Set();
-        for (var id in knownFunctionNodes) {
-            if (knownFunctionNodes.hasOwnProperty(id)) {
-                if (knownFunctionNodes[id].libs) {
-                    for (var i = 0, l = knownFunctionNodes[id].libs.length; i < l; i++) {
-                        if (RED.utils.checkModuleAllowed(knownFunctionNodes[id].libs[i].module, null, installAllowList, installDenyList)) {
-                            moduleSet.add(knownFunctionNodes[id].libs[i].module);
-                        }
-                    }
-                }
-            }
-        }
-        var modules = Array.from(moduleSet);
-        modules.sort();
-        return modules;
-    }
-
-    function prepareLibraryConfig(node) {
-        $(".node-input-libs-row").show();
-        var usedModules = getAllUsedModules();
-        var typedModules = usedModules.map(function (l) {
-            return { icon: "fa fa-cube", value: l, label: l, hasValue: false }
-        })
-        typedModules.push({
-            value: "_custom_", label: RED._("editor:subflow.licenseOther"), icon: "red/images/typedInput/az.svg"
-        })
-
-        var libList = $("#node-input-libs-container").css('min-height', '200px').css('min-width', '450px').editableList({
-            addItem: function (container, i, opt) {
-                var parent = container.parent();
-                var row0 = $("<div/>").addClass("node-libs-entry").appendTo(container);
-                var fieldWidth = "260px";
-                $('<code>const </code>').appendTo(row0);
-                var fvar = $("<input/>", {
-                    class: "node-input-libs-var red-ui-font-code",
-                    placeholder: RED._("node-red:function.require.var"),
-                    type: "text"
-                }).css({
-                    width: "120px",
-                    "margin-left": "5px"
-                }).appendTo(row0).val(opt.var);
-                var vnameWarning = $('<span style="display:inline-block; width: 16px;"><i class="fa fa-warning"></i></span>').appendTo(row0);
-                RED.popover.tooltip(vnameWarning.find("i"), function () {
-                    var val = fvar.val();
-                    if (invalidModuleVNames.indexOf(val) !== -1) {
-                        return RED._("node-red:function.error.moduleNameReserved", { name: val })
-                    } else {
-                        return RED._("node-red:function.error.moduleNameError", { name: val })
-                    }
-                })
-
-                $('<code> = require(</code>').appendTo(row0);
-                var fmodule = $("<input/>", {
-                    class: "node-input-libs-val",
-                    placeholder: RED._("node-red:function.require.module"),
-                    type: "text"
-                }).css({
-                    width: "180px",
-                }).appendTo(row0).typedInput({
-                    types: typedModules,
-                    default: usedModules.indexOf(opt.module) > -1 ? opt.module : "_custom_"
-                });
-                if (usedModules.indexOf(opt.module) === -1) {
-                    fmodule.typedInput('value', opt.module);
-                }
-
-                $('<code>)</code>').appendTo(row0);
-
-                var moduleWarning = $('<span style="display:inline-block; width: 16px;"><i class="fa fa-warning"></i></span>').appendTo(row0);
-                RED.popover.tooltip(moduleWarning.find("i"), function () {
-                    var val = fmodule.typedInput("type");
-                    if (val === "_custom_") {
-                        val = fmodule.val();
-                    }
-                    var errors = [];
-
-                    if (!RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList)) {
-                        return RED._("node-red:function.error.moduleNotAllowed", { module: val });
-                    } else {
-                        return RED._("node-red:function.error.moduleLoadError", { module: val, error: missingModuleReasons[val] });
-                    }
-                })
-
-                fvar.on("change keyup paste", function (e) {
-                    var v = $(this).val().trim();
-                    if (v === "" || / /.test(v) || invalidModuleVNames.indexOf(v) !== -1) {
-                        fvar.addClass("input-error");
-                        vnameWarning.addClass("input-error");
-                    } else {
-                        fvar.removeClass("input-error");
-                        vnameWarning.removeClass("input-error");
-                    }
-                });
-
-                fmodule.on("change keyup paste", function (e) {
-                    var val = $(this).typedInput("type");
-                    if (val === "_custom_") {
-                        val = $(this).val();
-                    }
-                    var varName = val.trim().replace(/^@/, "").replace(/@.*$/, "").replace(/[-_/]./g, function (v) { return v[1].toUpperCase() });
-                    fvar.val(varName);
-                    fvar.trigger("change");
-
-                    if (RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList) && (missingModules.indexOf(val) === -1)) {
-                        fmodule.removeClass("input-error");
-                        moduleWarning.removeClass("input-error");
-                    } else {
-                        fmodule.addClass("input-error");
-                        moduleWarning.addClass("input-error");
-                    }
-                });
-                if (RED.utils.checkModuleAllowed(opt.module, null, installAllowList, installDenyList) && (missingModules.indexOf(opt.module) === -1)) {
-                    fmodule.removeClass("input-error");
-                    moduleWarning.removeClass("input-error");
-                } else {
-                    fmodule.addClass("input-error");
-                    moduleWarning.addClass("input-error");
-                }
-                if (opt.var) {
-                    fvar.trigger("change");
-                }
-            },
-            removable: true
+          if (!RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList)) {
+            return RED._('node-red:function.error.moduleNotAllowed', { module: val });
+          }
+          return RED._('node-red:function.error.moduleLoadError', { module: val, error: missingModuleReasons[val] });
         });
 
-        var libs = node.libs || [];
-        for (var i = 0, l = libs.length; i < l; i++) {
-            libList.editableList('addItem', libs[i])
+        const fvarSpan = $('<span>').appendTo(row0);
+
+        const fvar = $('<input/>', {
+          class: 'node-input-libs-var red-ui-font-code',
+          placeholder: RED._('node-red:function.require.var'),
+          type: 'text',
+        }).css({
+        }).appendTo(fvarSpan).val(opt.var);
+        const vnameWarning = $('<span style="position: absolute; right:2px;top:7px;display:inline-block; width: 16px;"><i class="fa fa-warning"></i></span>').appendTo(fvarSpan);
+        RED.popover.tooltip(vnameWarning.find('i'), function () {
+          const val = fvar.val();
+          if (invalidModuleVNames.indexOf(val) !== -1) {
+            return RED._('node-red:function.error.moduleNameReserved', { name: val });
+          }
+          return RED._('node-red:function.error.moduleNameError', { name: val });
+        });
+
+        fvar.on('change keyup paste', function (e) {
+          const v = $(this).val().trim();
+          if (v === '' || / /.test(v) || invalidModuleVNames.indexOf(v) !== -1) {
+            fvar.addClass('input-error');
+            vnameWarning.addClass('input-error');
+          } else {
+            fvar.removeClass('input-error');
+            vnameWarning.removeClass('input-error');
+          }
+        });
+
+        fmodule.on('change keyup paste', function (e) {
+          let val = $(this).typedInput('type');
+          if (val === '_custom_') {
+            val = $(this).val();
+          }
+          const varName = val.trim().replace(/^@/, '').replace(/@.*$/, '').replace(/[-_/].?/g, function (v) { return (v[1] ? v[1].toUpperCase() : ''); });
+          fvar.val(varName);
+          fvar.trigger('change');
+
+          if (RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList) && (missingModules.indexOf(val) === -1)) {
+            fmodule.removeClass('input-error');
+            moduleWarning.removeClass('input-error');
+          } else {
+            fmodule.addClass('input-error');
+            moduleWarning.addClass('input-error');
+          }
+        });
+        if (RED.utils.checkModuleAllowed(opt.module, null, installAllowList, installDenyList) && (missingModules.indexOf(opt.module) === -1)) {
+          fmodule.removeClass('input-error');
+          moduleWarning.removeClass('input-error');
+        } else {
+          fmodule.addClass('input-error');
+          moduleWarning.addClass('input-error');
         }
-
-    }
-
-    RED.nodes.registerType('ui_output', {
-        category: 'UI Reef',
-        color: 'rgb( 63, 173, 181)',
-        defaults: {
-            name: { value: '' },
-            group: { type: 'ui_group', required: true },
-            order: { value: 0 },
-            width: {
-                value: 6,
-                validate: function (v) {
-                    var valid = true
-                    var width = v || 0;
-                    var currentGroup = $('#node-input-group').val() || this.group;
-                    var groupNode = RED.nodes.node(currentGroup);
-                    valid = !groupNode || +width <= +groupNode.width;
-                    $("#node-input-size").toggleClass("input-error", !valid);
-                    return valid;
-                }
-            },
-            height: { value: 1 },
-            label: { value: 'output' },
-            topic: { value: '' },
-            useThemeColors: { value: true },
-            uniqueValue: { value: false },
-            options: {
-                value: [],
-                validate: function (v) {
-                    var unique = new Set(v.map(function (o) { return o.value; }));
-                    return v.length == unique.size && v.length > 1;
-                }
-            },
-            storestate: { value: false },
-            func: { 
-                value:  '// Code will be processed on interval'
-                        + '\n// with returned value'
-                        + '\n// sent in msg.payload'
-                        + '\nreturn null;'
-            },
-            libs: {
-                value: [], validate: function (v) {
-                    if (!v) { return true; }
-                    for (var i = 0, l = v.length; i < l; i++) {
-                        var m = v[i];
-                        if (!RED.utils.checkModuleAllowed(m.module, null, installAllowList, installDenyList)) {
-                            return false
-                        }
-                        if (m.var === "" || / /.test(m.var)) {
-                            return false;
-                        }
-                        if (missingModules.indexOf(m.module) > -1) {
-                            return false;
-                        }
-                        if (invalidModuleVNames.indexOf(m.var) !== -1) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            },
-            noerr: { value: 0, required: true, validate: function (v) { return !v; } },
-            repeat: { value: 5, validate: function (v) { return ((v === "") || (RED.validators.number(v) && (v >= 1) && (v <= 2147483))) } }
-        },
-        inputs: 1,
-        outputs: 1,
-        icon: "ui_switch.png",
-        align: 'left',
-        paletteLabel: "output",
-        label: function () {
-            return this.name || (~this.label.indexOf("{{") ? null : this.label) || "output";
-        },
-        labelStyle: function () {
-            return this.name ? "node_label_italic" : "";
-        },
-        oneditprepare: function () {
-            var that = this;
-            var un = new Set(this.options.map(function (o) { return o.value }));
-            if (this.options.length != un.size) {
-                $("#configError").text("Values must be unique")
-                $("#configError").show();
-            }
-            else if (this.options.length < 2) {
-                $("#configError").text("Configure at least two options")
-                $("#configError").show();
-            }
-            else {
-                $("#configError").hide();
-            }
-
-            $("#node-input-size").elementSizer({
-                width: "#node-input-width",
-                group: "#node-input-group"
-            });
-
-            function getColor(idx) {
-                var colors = ['#009933', '#999999', '#ff6666', '#009999', '#cccc00', '#ff33cc', '#cc6600',
-                    '#99ff66', '#660033'
-                ]
-                if (idx > colors.length - 1) {
-                    return colors[Math.floor(Math.random() * colors.length)]
-                }
-                return colors[idx]
-            }
-
-            var optionsList = $("#node-input-opts-container").css('min-height', '200px').editableList({
-                header: $("<div>").append($.parseHTML(
-                    "<div style='width:40%; display: inline-grid'><b>Label</b></div>" +
-                    "<div style='width:40%; display: inline-grid'><b>Value</b></div>" +
-                    "<div style='width:10%; display: inline-grid' class='node-input-option-color'><b>Color</b></div>")),
-                addItem: function (container, i, option) {
-                    var row = $('<div/>').appendTo(container);
-                    var labelField = $('<input/>', { class: "node-input-option-label", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
-                    labelField.val(option.label || "Option " + i);
-                    var valueField = $('<input/>', { class: "node-input-option-value", type: "text" }).css({ "width": "40%", "margin-left": "5px", "margin-right": "5px" }).appendTo(row);
-                    valueField.typedInput({ types: ['str', 'num', 'bool', { value: 'func', label: 'function', icon: 'fa fa-code', hasValue: false }] });
-                    valueField.typedInput("type", option.valueType || "str");
-                    valueField.typedInput("value", option.value || "option_" + i);
-                    valueField.on('change', function (type, value) {
-                        $("#configError").hide();
-                    });
-                    var colofield = $("#node-input-useThemeColors").prop("checked") ? "none" : "inline-block";
-                    var colorField = $('<input/>', { class: "node-input-option-color", type: "color" }).css({ "width": "10%", "margin-left": "5px", "display": colofield }).appendTo(row);
-                    colorField.val(option.color || getColor(i));
-                },
-                removable: true,
-                sortable: true
-            });
-
-            if (this.options) {
-                this.options.forEach(function (option, index) {
-                    optionsList.editableList('addItem', { label: option.label, value: option.value, valueType: option.valueType, color: option.color });
-                });
-            }
-
-            $("#node-input-useThemeColors").on("change", function () {
-                var colorFields = $(".node-input-option-color");
-                if ($(this)[0].checked) {
-                    colorFields.hide();
-                }
-                else {
-                    colorFields.show();
-                }
-            });
-
-            $("#node-input-doubleClickZoomEnabled").change();
-
-            $("#node-input-stateField").val(this.stateField);
-            $('#node-input-stateField').typedInput({
-                types: ['msg'],
-                default: 'msg'
-            });
-
-            $(".inject-time-count").spinner({
-                min: 1
-            });
-
-            //var r = "s";
-            var c = this.repeat;
-            //if (this.repeat % 60 === 0) { r = "m"; c = c / 60; }
-            //if (this.repeat % 1440 === 0) { r = "h"; c = c / 60; }
-            $("#inject-time-interval-count").val(c);
-            //$("#inject-time-interval-units").val(r);
-
-            var tabs = RED.tabs.create({
-                id: "func-tabs",
-                onchange: function (tab) {
-                    $("#func-tabs-content").children().hide();
-                    $("#" + tab.id).show();
-                }
-            });
-
-            tabs.addTab({
-                id: "func-tab-option",
-                iconClass: "fa fa-cog",
-                label: that._(" Setup")
-            });
-
-            tabs.addTab({
-                id: "func-tab-body",
-                iconClass: "fa fa-code",
-                label: that._(" Function")
-            });
-
-            tabs.activateTab("func-tab-option");
-
-            var buildEditor = function (id, value, defaultValue) {
-                var editor = RED.editor.createEditor({
-                    id: id,
-                    mode: 'ace/mode/nrjavascript',
-                    value: value || defaultValue || "",
-                    globals: {
-                        msg: true,
-                        context: true,
-                        RED: true,
-                        util: true,
-                        flow: true,
-                        global: true,
-                        console: true,
-                        Buffer: true,
-                        setTimeout: true,
-                        clearTimeout: true,
-                        setInterval: true,
-                        clearInterval: true
-                    }
-                });
-                if (defaultValue && value === "") {
-                    editor.moveCursorTo(defaultValue.split("\n").length - 1, 0);
-                }
-                return editor;
-            }
-
-            this.editor = buildEditor('node-input-func-editor', $("#node-input-func").val())
-
-            RED.library.create({
-                url: "functions",
-                type: "function",
-                editor: this.editor,
-                mode: "ace/mode/nrjavascript",
-                fields: [
-                    'name', 'outputs',
-                    {
-                        name: 'initialize',
-                        get: function () {
-                            return that.initEditor.getValue();
-                        },
-                        set: function (v) {
-                            that.initEditor.setValue(v || RED._("node-red:function.text.initialize"), -1);
-                        }
-                    },
-                    {
-                        name: 'finalize',
-                        get: function () {
-                            return that.finalizeEditor.getValue();
-                        },
-                        set: function (v) {
-                            that.finalizeEditor.setValue(v || RED._("node-red:function.text.finalize"), -1);
-                        }
-                    },
-                    {
-                        name: 'info',
-                        get: function () {
-                            return that.infoEditor.getValue();
-                        },
-                        set: function (v) {
-                            that.infoEditor.setValue(v || "", -1);
-                        }
-                    }
-                ],
-                ext: "js"
-            });
-            this.editor.focus();
-
-            var expandButtonClickHandler = function (editor) {
-                return function (e) {
-                    e.preventDefault();
-                    var value = editor.getValue();
-                    RED.editor.editJavaScript({
-                        value: value,
-                        width: "Infinity",
-                        cursor: editor.getCursorPosition(),
-                        mode: "ace/mode/nrjavascript",
-                        complete: function (v, cursor) {
-                            editor.setValue(v, -1);
-                            editor.gotoLine(cursor.row + 1, cursor.column, false);
-                            setTimeout(function () {
-                                editor.focus();
-                            }, 300);
-                        }
-                    })
-                }
-            }
-            $("#node-function-expand-js").on("click", expandButtonClickHandler(this.editor));
-
-            RED.popover.tooltip($("#node-function-expand-js"), RED._("node-red:common.label.expand"));
-
-            if (RED.settings.functionExternalModules !== false) {
-                prepareLibraryConfig(that);
-            }
-        },
-        oneditsave: function () {
-            var node = this;
-            node.options = [];
-            var optionsList = $("#node-input-opts-container").editableList('items');
-            optionsList.each(function (i) {
-                var option = $(this);
-                var label = option.find(".node-input-option-label").val();
-                var value = option.find(".node-input-option-value").typedInput('value');
-                var valueType = option.find(".node-input-option-value").typedInput('type');
-                var color = option.find(".node-input-option-color").val();
-                node.options.push({ label: label, value: value, valueType: valueType, color: color });
-            });
-
-            //var repeat = 0;
-            var count = $("#inject-time-interval-count").val();
-            //var units = $("#inject-time-interval-units").val();
-            //if (units == "s") {
-                node.repeat = count;
-            //} else {
-                //if (units == "m") {
-                    //node.repeat = count * 60;
-                //} else if (units == "h") {
-                    //node.repeat = count * 60 * 60;
-                //}
-            //}
-
-            var noerr = 0;
-            $("#node-input-noerr").val(0);
-
-            var disposeEditor = function (editorName, targetName, defaultValue) {
-                var editor = node[editorName];
-                var annot = editor.getSession().getAnnotations();
-                for (var k = 0; k < annot.length; k++) {
-                    if (annot[k].type === "error") {
-                        noerr += annot.length;
-                        break;
-                    }
-                }
-                var val = editor.getValue();
-                if (defaultValue) {
-                    if (val.trim() == defaultValue.trim()) {
-                        val = "";
-                    }
-                }
-                editor.destroy();
-                delete node[editorName];
-                $("#" + targetName).val(val);
-            }
-
-            disposeEditor("editor", "node-input-func");
-
-            $("#node-input-noerr").val(noerr);
-            this.noerr = noerr;
-            if (RED.settings.functionExternalModules === true) {
-                var libs = $("#node-input-libs-container").editableList("items");
-                node.libs = [];
-                libs.each(function (i) {
-                    var item = $(this);
-                    var v = item.find(".node-input-libs-var").val();
-                    var n = item.find(".node-input-libs-val").typedInput("type");
-                    if (n === "_custom_") {
-                        n = item.find(".node-input-libs-val").val();
-                    }
-                    if ((!v || (v === "")) ||
-                        (!n || (n === ""))) {
-                        return;
-                    }
-                    node.libs.push({
-                        var: v,
-                        module: n
-                    });
-                });
-            } else {
-                node.libs = [];
-            }
-        },
-        oneditcancel: () => {
-            var node = this;
-            node.editor.destroy();
-            delete node.editor;
-        },
-        oneditresize: (size) => {
-            var rows = $("#dialog-form>div:not(.node-text-editor-row)");
-            var height = $("#dialog-form").height();
-            for (var i = 0; i < rows.length; i++) {
-                height -= $(rows[i]).outerHeight(true);
-            }
-            var editorRow = $("#dialog-form>div.node-text-editor-row");
-            height -= (parseInt(editorRow.css("marginTop")) + parseInt(editorRow.css("marginBottom")));
-            $("#dialog-form .node-text-editor").css("height", height + "px");
-
-            height = size.height;
-            $("#node-input-func-editor").css("height", (height - 260) + "px");
-            this.editor.resize();
+        if (opt.var) {
+          fvar.trigger('change');
         }
+      },
+      removable: true,
     });
+
+    const libs = node.libs || [];
+    for (let i = 0, l = libs.length; i < l; i += 1) {
+      libList.editableList('addItem', libs[i]);
+    }
+  }
+
+  function getLibsList() {
+    const _libs = [];
+    if (RED.settings.functionExternalModules !== false) {
+      const libs = $('#node-input-libs-container').editableList('items');
+      libs.each(function (i) {
+        const item = $(this);
+        const v = item.find('.node-input-libs-var').val();
+        let n = item.find('.node-input-libs-val').typedInput('type');
+        if (n === '_custom_') {
+          n = item.find('.node-input-libs-val').val();
+        }
+        if ((!v || (v === ''))
+                    || (!n || (n === ''))) {
+          return;
+        }
+        _libs.push({
+          var: v,
+          module: n,
+        });
+      });
+    }
+    return _libs;
+  }
+
+  RED.nodes.registerType('ui_output', {
+    category: 'UI Reef',
+    color: 'rgb( 63, 173, 181)',
+    defaults: {
+      name: { value: '' },
+      group: { type: 'ui_group', required: true },
+      order: { value: 0 },
+      width: {
+        value: 6,
+        validate: function (v) {
+          let valid = true;
+          const width = v || 0;
+          const currentGroup = $('#node-input-group').val() || this.group;
+          const groupNode = RED.nodes.node(currentGroup);
+          valid = !groupNode || +width <= +groupNode.width;
+          $('#node-input-size').toggleClass('input-error', !valid);
+          return valid;
+        },
+      },
+      height: { value: 1 },
+      label: { value: 'output' },
+      // topic: { value: '' },
+      useThemeColors: { value: true },
+      // uniqueValue: { value: false },
+      options: {
+        value: [],
+        validate: function (v) {
+          const unique = new Set(v.map(function (o) { return o.value; }));
+          return v.length === unique.size && v.length > 1;
+        },
+      },
+      storestate: { value: false },
+      func: { value: '\nreturn msg;' },
+      outputs: { value: 1 },
+      noerr: {
+        value: 0,
+        required: true,
+        validate(v) {
+          return !v;
+        },
+      },
+      initialize: { value: '' },
+      finalize: { value: '' },
+      libs: {
+        value: [],
+        validate(v) {
+          if (!v) { return true; }
+          for (let i = 0, l = v.length; i < l; i += 1) {
+            const m = v[i];
+            if (!RED.utils.checkModuleAllowed(m.module, null, installAllowList, installDenyList)) {
+              return false;
+            }
+            if (m.var === '' || / /.test(m.var)) {
+              return false;
+            }
+            if (missingModules.indexOf(m.module) > -1) {
+              return false;
+            }
+            if (invalidModuleVNames.indexOf(m.var) !== -1) {
+              return false;
+            }
+          }
+          return true;
+        },
+      },
+      repeat: {
+        value: 5,
+        validate(v) {
+          return ((v === '') || (RED.validators.number(v) && (v >= 1) && (v <= 2147483)));
+        },
+      },
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'ui_switch.png',
+    align: 'left',
+    paletteLabel: 'output',
+    label: function () { return this.name || 'output'; },
+    labelStyle: function () { return (this.name ? 'node_label_italic' : ''); },
+    oneditprepare: function () {
+      const that = this;
+      const un = new Set(this.options.map(function (o) { return o.value; }));
+      if (this.options.length !== un.size) {
+        $('#configError').text('Values must be unique');
+        $('#configError').show();
+      } else if (this.options.length < 2) {
+        $('#configError').text('Configure at least two options');
+        $('#configError').show();
+      } else {
+        $('#configError').hide();
+      }
+
+      $('#node-input-size').elementSizer({
+        width: '#node-input-width',
+        group: '#node-input-group',
+      });
+
+      function getColor(idx) {
+        const colors = ['#009933', '#999999', '#ff6666', '#009999', '#cccc00', '#ff33cc', '#cc6600',
+          '#99ff66', '#660033',
+        ];
+        if (idx > colors.length - 1) {
+          return colors[Math.floor(Math.random() * colors.length)];
+        }
+        return colors[idx];
+      }
+
+      const optionsList = $('#node-input-opts-container').css('min-height', '200px').editableList({
+        header: $('<div>').append($.parseHTML(
+          "<div style='width:40%; display: inline-grid'><b>Label</b></div>"
+                    + "<div style='width:40%; display: inline-grid'><b>Value</b></div>"
+                    + "<div style='width:10%; display: inline-grid' class='node-input-option-color'><b>Color</b></div>",
+        )),
+        addItem(container, i, option) {
+          const row = $('<div/>').appendTo(container);
+          const labelField = $('<input/>', { class: 'node-input-option-label', type: 'text' }).css({ width: '40%', 'margin-left': '5px', 'margin-right': '5px' }).appendTo(row);
+          labelField.val(option.label || `Option ${i}`);
+          const valueField = $('<input/>', { class: 'node-input-option-value', type: 'text' }).css({ width: '40%', 'margin-left': '5px', 'margin-right': '5px' }).appendTo(row);
+          valueField.typedInput({
+            types: ['str', 'num', 'bool', {
+              value: 'func', label: 'function', icon: 'fa fa-code', hasValue: false,
+            }],
+          });
+          valueField.typedInput('type', option.valueType || 'str');
+          valueField.typedInput('value', option.value || `option_${i}`);
+          valueField.on('change', function (type, value) {
+            $('#configError').hide();
+          });
+          const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
+          const colorField = $('<input/>', { class: 'node-input-option-color', type: 'color' }).css({ width: '10%', 'margin-left': '5px', display: colofield }).appendTo(row);
+          colorField.val(option.color || getColor(i));
+        },
+        removable: true,
+        sortable: true,
+      });
+
+      if (this.options) {
+        this.options.forEach(function (option, index) {
+          optionsList.editableList('addItem', {
+            label: option.label, value: option.value, valueType: option.valueType, color: option.color,
+          });
+        });
+      }
+
+      $('#node-input-useThemeColors').on('change', function () {
+        const colorFields = $('.node-input-option-color');
+        if ($(this)[0].checked) {
+          colorFields.hide();
+        } else {
+          colorFields.show();
+        }
+      });
+
+      $('#node-input-doubleClickZoomEnabled').change();
+
+      $('#node-input-stateField').val(this.stateField);
+      $('#node-input-stateField').typedInput({
+        types: ['msg'],
+        default: 'msg',
+      });
+
+      $('#inject-time-interval-count').spinner({
+        min: 1,
+        change(event, ui) {
+          let { value } = this;
+          if (!value.match(/^\d+$/)) { value = 1; } else if (value < this.min) { value = this.min; }
+          if (value !== this.value) { $(this).spinner('value', value); }
+        },
+      });
+
+      const c = this.repeat;
+      $('#inject-time-interval-count').val(c);
+
+      const tabs = RED.tabs.create({
+        id: 'func-tabs',
+        onchange(tab) {
+          $('#func-tabs-content').children().hide();
+          $(`#${tab.id}`).show();
+          const editor = $(`#${tab.id}`).find('.monaco-editor').first();
+          if (editor.length) {
+            if (that.editor.nodered && that.editor.type === 'monaco') {
+              that.editor.nodered.refreshModuleLibs(getLibsList());
+            }
+            RED.tray.resize();
+          }
+        },
+      });
+      tabs.addTab({
+        id: 'func-tab-config',
+        iconClass: 'fa fa-cog',
+        label: 'Setup',
+      });
+
+      tabs.addTab({
+        id: 'func-tab-body',
+        label: 'On Interval',
+      });
+      tabs.addTab({
+        id: 'func-tab-finalize',
+        label: 'On Stop',
+      });
+
+      tabs.activateTab('func-tab-body');
+
+      $('#node-input-outputs').spinner({
+        min: 0,
+        change(event, ui) {
+          let { value } = this;
+          if (!value.match(/^\d+$/)) { value = 1; } else if (value < this.min) { value = this.min; }
+          if (value !== this.value) { $(this).spinner('value', value); }
+        },
+      });
+
+      function buildEditor(id, value, defaultValue, extraLibs) {
+        const editor = RED.editor.createEditor({
+          id,
+          mode: 'ace/mode/nrjavascript',
+          value: value || defaultValue || '',
+          globals: {
+            msg: true,
+            context: true,
+            RED: true,
+            util: true,
+            flow: true,
+            global: true,
+            console: true,
+            Buffer: true,
+            setTimeout: true,
+            clearTimeout: true,
+            setInterval: true,
+            clearInterval: true,
+          },
+          extraLibs,
+        });
+        if (defaultValue && value === '') {
+          editor.moveCursorTo(defaultValue.split('\n').length - 1, 0);
+        }
+        return editor;
+      }
+      this.editor = buildEditor('node-input-func-editor', $('#node-input-func').val(), undefined, that.libs || []);
+      this.finalizeEditor = buildEditor('node-input-finalize-editor', $('#node-input-finalize').val(), RED._('node-red:function.text.finalize'));
+
+      RED.library.create({
+        url: 'functions',
+        type: 'function',
+        editor: this.editor,
+        mode: 'ace/mode/nrjavascript',
+        fields: [
+          'name', 'outputs',
+          {
+            name: 'initialize',
+            get() {
+              return that.initEditor.getValue();
+            },
+            set(v) {
+              that.initEditor.setValue(v || RED._('node-red:function.text.initialize'), -1);
+            },
+          },
+          {
+            name: 'finalize',
+            get() {
+              return that.finalizeEditor.getValue();
+            },
+            set(v) {
+              that.finalizeEditor.setValue(v || RED._('node-red:function.text.finalize'), -1);
+            },
+          },
+          {
+            name: 'info',
+            get() {
+              return that.infoEditor.getValue();
+            },
+            set(v) {
+              that.infoEditor.setValue(v || '', -1);
+            },
+          },
+        ],
+        ext: 'js',
+      });
+      this.editor.focus();
+
+      const expandButtonClickHandler = function (editor) {
+        return function (e) {
+          e.preventDefault();
+          const value = editor.getValue();
+          RED.editor.editJavaScript({
+            value,
+            width: 'Infinity',
+            cursor: editor.getCursorPosition(),
+            mode: 'ace/mode/nrjavascript',
+            complete(v, cursor) {
+              editor.setValue(v, -1);
+              editor.gotoLine(cursor.row + 1, cursor.column, false);
+              setTimeout(function () {
+                editor.focus();
+              }, 300);
+            },
+          });
+        };
+      };
+      $('#node-function-expand-js').on('click', expandButtonClickHandler(this.editor));
+      $('#node-finalize-expand-js').on('click', expandButtonClickHandler(this.finalizeEditor));
+
+      RED.popover.tooltip($('#node-function-expand-js'), RED._('node-red:common.label.expand'));
+      RED.popover.tooltip($('#node-finalize-expand-js'), RED._('node-red:common.label.expand'));
+
+      if (RED.settings.functionExternalModules !== false) {
+        prepareLibraryConfig(that);
+      }
+    },
+    oneditsave: function () {
+      const node = this;
+      node.options = [];
+      const optionsList = $('#node-input-opts-container').editableList('items');
+      optionsList.each(function (i) {
+        const option = $(this);
+        const label = option.find('.node-input-option-label').val();
+        const value = option.find('.node-input-option-value').typedInput('value');
+        const valueType = option.find('.node-input-option-value').typedInput('type');
+        const color = option.find('.node-input-option-color').val();
+        node.options.push({
+          label, value, valueType, color,
+        });
+      });
+
+      const count = $('#inject-time-interval-count').val();
+      node.repeat = count;
+
+      let noerr = 0;
+      $('#node-input-noerr').val(0);
+
+      const disposeEditor = function (editorName, targetName, defaultValue) {
+        const editor = node[editorName];
+        const annot = editor.getSession().getAnnotations();
+        for (let k = 0; k < annot.length; k += 1) {
+          if (annot[k].type === 'error') {
+            noerr += annot.length;
+            break;
+          }
+        }
+        let val = editor.getValue();
+        if (defaultValue) {
+          if (val.trim() === defaultValue.trim()) {
+            val = '';
+          }
+        }
+        editor.destroy();
+        delete node[editorName];
+        $(`#${targetName}`).val(val);
+      };
+      disposeEditor('editor', 'node-input-func');
+      disposeEditor('finalizeEditor', 'node-input-finalize', RED._('node-red:function.text.finalize'));
+
+      $('#node-input-noerr').val(noerr);
+      this.noerr = noerr;
+      node.libs = getLibsList();
+    },
+    oneditcancel: function () {
+      const node = this;
+
+      node.editor.destroy();
+      delete node.editor;
+
+      node.finalizeEditor.destroy();
+      delete node.finalizeEditor;
+    },
+    oneditresize: function (size) {
+      const rows = $('#dialog-form>div:not(.node-text-editor-row)');
+      let dialogHeight = $('#dialog-form').height();
+      for (let i = 0; i < rows.length; i += 1) {
+        dialogHeight -= $(rows[i]).outerHeight(true);
+      }
+      const editorRow = $('#dialog-form>div.node-text-editor-row');
+      dialogHeight -= (parseInt(editorRow.css('marginTop'), 10) + parseInt(editorRow.css('marginBottom'), 10));
+      $('#dialog-form .node-text-editor').css('height', `${dialogHeight}px`);
+
+      const { height } = size;
+      $('#node-input-func-editor').css('height', `${height - 220}px`);
+      $('#node-input-finalize-editor').css('height', `${height - 220}px`);
+
+      this.editor.resize();
+      this.finalizeEditor.resize();
+
+      $('#node-input-libs-container').css('height', `${height - 192}px`);
+    },
+  });
+}());
 </script>

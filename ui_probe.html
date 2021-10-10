@@ -5,7 +5,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-group"><i class="fa fa-table"></i> Group</span></label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group" style="width: 100%;"></div>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group"></div>
     </div>
     <div class="form-row" id="template-row-size">
         <label><i class="fa fa-object-group"></i> Size</span></label>
@@ -15,7 +15,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label" style="width: 100%;"></div>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
     </div>
     <div class="form-row" id="x-axis-show">
         <label for="node-input-removeOlder">Timeframe</label>
@@ -54,110 +54,102 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('ui_probe', {
-        category: 'UI Reef',
-        color: 'rgb( 63, 173, 181)',
-        defaults: {
-            name: { value: '' },
-            group: { type: 'ui_group', required: true },
-            order: { value: 0 },
-            width: {
-                value: 6,
-                validate: function (v) {
-                    var valid = true
-                    var width = v || 0;
-                    var currentGroup = $('#node-input-group').val() || this.group;
-                    var groupNode = RED.nodes.node(currentGroup);
-                    valid = !groupNode || +width <= +groupNode.width;
-                    $("#node-input-size").toggleClass("input-error", !valid);
-                    return valid;
-                }
-            },
-            height: { value: 2 },
-            label: { value: 'probe' },
-            removeOlder: { value: 1, validate:RED.validators.number(), required: true },
-            removeOlderUnit: { value: '3600', required: true },
-            decimal: { value: 0, validate:RED.validators.number(), required: true },
-            scale: { value: false },
-            minin: { 
-                value:'' ,
-                validate: function (v) {
-                    if ($('#node-input-scale').val() === true) {
-                        return (RED.validators.number(v));
-                    } else {
-                        return true;
-                    }
-                }
-            },
-            maxin: { 
-                value:'' ,
-                validate: function (v) {
-                    if ($('#node-input-scale').val()) {
-                        return (RED.validators.number(v));
-                    } else {
-                        return true;
-                    }
-                }
-            },
-            minout: { 
-                value:'' ,
-                validate: function (v) {
-                    if ($('#node-input-scale').val()) {
-                        return (RED.validators.number(v));
-                    } else {
-                        return true;
-                    }
-                }
-            },
-            maxout: { 
-                value:'' ,
-                validate: function (v) {
-                    if ($('#node-input-scale').val()) {
-                        return (RED.validators.number(v));
-                    } else {
-                        return true;
-                    }
-                }
-            },
-        },
-        inputs: 1,
-        outputs: 1,
-        icon: "ui_chart.png",
-        align: 'left',
-        paletteLabel: "probe",
-        label: function () {
-            return this.name || (~this.label.indexOf("{{") ? null : this.label) || "probe";
-        },
-        labelStyle: function () {
-            return this.name ? "node_label_italic" : "";
-        },
-        oneditprepare: function () {
-            var that = this;
-            $("#node-input-size").elementSizer({
-                width: "#node-input-width",
-                group: "#node-input-group"
-            });
-            $("#node-input-valueField").val(this.valueField);
-            $('#node-input-valueField').typedInput({
-                types: ['msg'],
-                default: 'msg'
-            });
-            $('#node-input-scale').on("change", function () {
-                if ($(this)[0].checked) {
-                    $('.inp-lbl-row').show();
-                    $('.inp-row').show();
-                    $('.outp-lbl-row').show();
-                    $('.outp-row').show();
-                } else {
-                    $('.inp-lbl-row').hide();
-                    $('.inp-row').hide();
-                    $('.outp-lbl-row').hide();
-                    $('.outp-row').hide();
-                }
-            });
-        },
-        oneditsave: function () {
-            var node = this;
+RED.nodes.registerType('ui_probe', {
+  category: 'UI Reef',
+  color: 'rgb( 63, 173, 181)',
+  defaults: {
+    name: { value: '' },
+    group: { type: 'ui_group', required: true },
+    order: { value: 0 },
+    width: {
+      value: 6,
+      validate: function (v) {
+        let valid = true;
+        const width = v || 0;
+        const currentGroup = $('#node-input-group').val() || this.group;
+        const groupNode = RED.nodes.node(currentGroup);
+        valid = !groupNode || +width <= +groupNode.width;
+        $('#node-input-size').toggleClass('input-error', !valid);
+        return valid;
+      },
+    },
+    height: { value: 2 },
+    label: { value: 'probe' },
+    removeOlder: { value: 1, validate: RED.validators.number(), required: true },
+    removeOlderUnit: { value: '3600', required: true },
+    decimal: { value: 0, validate: RED.validators.number(), required: true },
+    scale: { value: false },
+    minin: {
+      value: '',
+      validate: function (v) {
+        if ($('#node-input-scale').val() === true) {
+          return (RED.validators.number(v));
         }
+        return true;
+      },
+    },
+    maxin: {
+      value: '',
+      validate: function (v) {
+        if ($('#node-input-scale').val()) {
+          return (RED.validators.number(v));
+        }
+        return true;
+      },
+    },
+    minout: {
+      value: '',
+      validate: function (v) {
+        if ($('#node-input-scale').val()) {
+          return (RED.validators.number(v));
+        }
+        return true;
+      },
+    },
+    maxout: {
+      value: '',
+      validate: function (v) {
+        if ($('#node-input-scale').val()) {
+          return (RED.validators.number(v));
+        }
+        return true;
+      },
+    },
+  },
+  inputs: 1,
+  outputs: 1,
+  icon: 'ui_chart.png',
+  align: 'left',
+  paletteLabel: 'probe',
+  label: function () { return this.name || (!this.label.indexOf('{{') ? null : this.label) || 'probe'; },
+  labelStyle: function () { return (this.name ? 'node_label_italic' : ''); },
+  oneditprepare: function () {
+    const that = this;
+    $('#node-input-size').elementSizer({
+      width: '#node-input-width',
+      group: '#node-input-group',
     });
+    $('#node-input-valueField').val(this.valueField);
+    $('#node-input-valueField').typedInput({
+      types: ['msg'],
+      default: 'msg',
+    });
+    $('#node-input-scale').on('change', function () {
+      if ($(this)[0].checked) {
+        $('.inp-lbl-row').show();
+        $('.inp-row').show();
+        $('.outp-lbl-row').show();
+        $('.outp-row').show();
+      } else {
+        $('.inp-lbl-row').hide();
+        $('.inp-row').hide();
+        $('.outp-lbl-row').hide();
+        $('.outp-row').hide();
+      }
+    });
+  },
+  oneditsave: function () {
+    const node = this;
+  },
+});
 </script>
