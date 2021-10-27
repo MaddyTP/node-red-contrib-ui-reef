@@ -108,8 +108,10 @@ module.exports = function (RED) {
     const node = this;
     node.name = config.name;
     node.label = config.label;
+    node.topic = config.topic;
     node.func = config.func;
     node.outputs = config.outputs;
+    node.ini = config.initialize ? config.initialize.trim() : '';
     node.fin = config.finalize ? config.finalize.trim() : '';
     node.libs = config.libs || [];
 
@@ -135,8 +137,8 @@ module.exports = function (RED) {
             + node.func + '\n'
             + '})();';
 
-    let finScript = null;
-    let finOpt = null;
+    // let finScript = null;
+    // let finOpt = null;
     node.outstandingTimers = [];
     node.outstandingIntervals = [];
     node.clearStatus = false;
@@ -310,28 +312,59 @@ module.exports = function (RED) {
           config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
         }
 
+        // let iniScript = null;
+        // let iniOpt = null;
+        // if (node.ini && (node.ini !== '')) {
+        //   const iniText = `
+        //             (async function(__send__) {
+        //                 var node = {
+        //                     id:__node__.id,
+        //                     name:__node__.name,
+        //                     outputCount:__node__.outputCount,
+        //                     log:__node__.log,
+        //                     error:__node__.error,
+        //                     warn:__node__.warn,
+        //                     debug:__node__.debug,
+        //                     trace:__node__.trace,
+        //                     status:__node__.status,
+        //                     send: function(msgs, cloneMsg) {
+        //                         __node__.send(__send__, RED.util.generateId(), msgs, cloneMsg);
+        //                     }
+        //                 };
+        //                 ` + node.ini + `
+        //             })(__initSend__);`;
+        //   iniOpt = createVMOpt(node, ' setup');
+        //   iniScript = new vm.Script(iniText, iniOpt);
+        // }
+
         node.script = vm.createScript(functionText, createVMOpt(node, ''));
-        if (node.fin && (node.fin !== '')) {
-          const finText = `(function () {
-                        var node = {
-                            id:__node__.id,
-                            name:__node__.name,
-                            outputCount:__node__.outputCount,
-                            log:__node__.log,
-                            error:__node__.error,
-                            warn:__node__.warn,
-                            debug:__node__.debug,
-                            trace:__node__.trace,
-                            status:__node__.status,
-                            send: function(msgs, cloneMsg) {
-                                __node__.error("Cannot send from close function");
-                            }
-                        };
-                        ` + node.fin + `
-                    })();`;
-          finOpt = createVMOpt(node, ' cleanup');
-          finScript = new vm.Script(finText, finOpt);
-        }
+        // if (node.fin && (node.fin !== '')) {
+        //   const finText = `(function () {
+        //                 var node = {
+        //                     id:__node__.id,
+        //                     name:__node__.name,
+        //                     outputCount:__node__.outputCount,
+        //                     log:__node__.log,
+        //                     error:__node__.error,
+        //                     warn:__node__.warn,
+        //                     debug:__node__.debug,
+        //                     trace:__node__.trace,
+        //                     status:__node__.status,
+        //                     send: function(msgs, cloneMsg) {
+        //                         __node__.error("Cannot send from close function");
+        //                     }
+        //                 };
+        //                 ` + node.fin + `
+        //             })();`;
+        //   finOpt = createVMOpt(node, ' cleanup');
+        //   finScript = new vm.Script(finText, finOpt);
+        // }
+
+        // let promise = Promise.resolve();
+        // if (iniScript) {
+        //   context.__initSend__ = function (msgs) { node.send(msgs); };
+        //   iniScript.runInContext(context, iniOpt);
+        // }
 
         RED.nodes.createNode(node, config);
 
@@ -385,6 +418,7 @@ module.exports = function (RED) {
         node.sendInitial = function (val) {
           const msg = {};
           msg.payload = val;
+          if (config.topic !== '') { msg.topic = config.topic; }
           setTimeout(function () {
             sendResults(node, msg, false);
           }, 3000);
@@ -435,17 +469,17 @@ module.exports = function (RED) {
           beforeSend: function (msg, orig) {
             if (config.storestate) { node.context().set('state', orig.msg.option); }
             if (orig && orig.msg.option.valueType === 'func') {
-              node.repeaterSetup(msg);
+              node.repeaterSetup();
               orig._dontSend = true;
             } else {
               node.cancelRepeater();
+              if (config.topic !== '') { msg.topic = config.topic; }
             }
             msg.payload = orig.msg.payload;
             return msg;
           },
           initController: function ($scope) {
             $scope.flag = true;
-
             function txtClassToStandOut(bgColor, light, dark) {
               const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
               const r = parseInt(color.substring(0, 2), 16);
@@ -534,21 +568,25 @@ module.exports = function (RED) {
               switchStateChanged(config.initOpt.value, false);
             };
 
-            $scope.$watch('msg', function (msg) {
-              if (msg && msg._toFront === true) {
-                let divIndex = -1;
-                $scope.config.options.forEach(function (option, index) {
-                  if (option.value === msg.payload) {
-                    divIndex = index;
-                  }
-                });
-                if (divIndex >= 0) {
-                  $scope.inputState = $scope.config.options[divIndex].label.toString();
-                } else {
-                  $scope.inputState = msg.payload.toString();
-                }
-              }
-            });
+            // $scope.$watch('msg', function (msg) {
+            //   if (msg && msg._toFront === true) {
+            //     let divIndex = -1;
+            //     $scope.config.options.forEach(function (option, index) {
+            //       if (option.value === msg.payload) {
+            //         divIndex = index;
+            //       }
+            //     });
+            //     if (divIndex >= 0) {
+            //       let inputLbl;
+            //       if ($scope.config.options[divIndex].valueType === 'func') {
+            //         inputLbl = msg.payload;
+            //       } else {
+            //         inputLbl = $scope.config.options[divIndex].label;
+            //       }
+            //       $scope.inputState = inputLbl.toString();
+            //     }
+            //   }
+            // });
           },
         });
 
@@ -560,13 +598,13 @@ module.exports = function (RED) {
         });
 
         node.on('close', function () {
-          if (finScript) {
-            try {
-              finScript.runInContext(context, finOpt);
-            } catch (err) {
-              node.error(err);
-            }
-          }
+          // if (finScript) {
+          //   try {
+          //     finScript.runInContext(context, finOpt);
+          //   } catch (err) {
+          //     node.error(err);
+          //   }
+          // }
           while (node.outstandingTimers.length > 0) {
             clearTimeout(node.outstandingTimers.pop());
           }

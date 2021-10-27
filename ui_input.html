@@ -7,6 +7,10 @@
         <label for="node-input-group"><i class="fa fa-table"></i> Group</span></label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group"></div>
     </div>
+    <div class="form-row">
+        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
+    </div>
     <div class="form-row" id="template-row-size">
         <label><i class="fa fa-object-group"></i> Size</span></label>
         <input type="hidden" id="node-input-width">
@@ -14,20 +18,19 @@
         <button class="editor-button" id="node-input-size"></button>
     </div>
     <div class="form-row">
-        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
-    </div>
-    <div class="form-row">
-        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> Input</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-stateField"></div>
-    </div>
-    <div class="form-row">
         <label for='node-input-useThemeColors'><i class='fa fa-paint-brush'></i> Colors</label>
         <input type='checkbox' id='node-input-useThemeColors' style='width: auto; border: none; vertical-align: baseline;'>
         <span for='node-input-useThemeColors' style="padding-left: 5px;">Use theme colors?</span>
     </div>
     <div class="form-row">
+        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> Input</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-stateField"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:0;">
+        <label style="width: 100px"><i class="fa fa-list"></i> Options:</label>
         <span id="configError" style="color:#DD0000"><b>All Values must be unique.</b></span>
+    </div>
+    <div class="form-row">
         <ol id="node-input-opts-container"></ol>
     </div>
 </script>
@@ -75,17 +78,17 @@ RED.nodes.registerType('ui_input', {
   label: function () { return this.name || (!this.label.indexOf('{{') ? null : this.label) || 'input'; },
   labelStyle: function () { return (this.name ? 'node_label_italic' : ''); },
   oneditprepare: function () {
-    // const that = this;
-    const un = new Set(this.options.map(function (o) { return o.value; }));
-    if (this.options.length !== un.size) {
-      $('#configError').text('Values must be unique');
-      $('#configError').show();
-    } else if (this.options.length < 2) {
-      $('#configError').text('Configure at least two options');
-      $('#configError').show();
-    } else {
-      $('#configError').hide();
-    }
+    const that = this;
+    // const un = new Set(this.options.map(function (o) { return o.value; }));
+    // if (this.options.length !== un.size) {
+    //   $('#configError').text('Values must be unique');
+    //   $('#configError').show();
+    // } else if (this.options.length < 2) {
+    //   $('#configError').text('Configure at least two options');
+    //   $('#configError').show();
+    // } else {
+    //   $('#configError').hide();
+    // }
 
     $('#node-input-size').elementSizer({
       width: '#node-input-width',
@@ -117,11 +120,15 @@ RED.nodes.registerType('ui_input', {
         valueField.typedInput('type', option.valueType || 'str');
         valueField.typedInput('value', option.value || 'option_' + i);
         valueField.on('change', function (type, value) {
-          $('#configError').hide();
+          validate();
         });
         const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
         const colorField = $('<input/>', { class: 'node-input-option-color', type: 'color' }).css({ width: '10%', 'margin-left': '5px', display: colofield }).appendTo(row);
         colorField.val(option.color || getColor(i));
+        validate();
+      },
+      removeItem: function (data) {
+        validate();
       },
       removable: true,
       sortable: true,
@@ -151,6 +158,41 @@ RED.nodes.registerType('ui_input', {
       types: ['msg'],
       default: 'msg',
     });
+
+    function validate() {
+      // Copy all the options from the editableList to this node
+      const that = this;
+      this.options = [];
+      const optionsList = $('#node-input-opts-container').editableList('items');
+      optionsList.each(function (i) {
+        const option = $(this);
+        const label = option.find('.node-input-option-label').val();
+        const value = option.find('.node-input-option-value').typedInput('value');
+        const valueType = option.find('.node-input-option-value').typedInput('type');
+        const color = option.find('.node-input-option-color').val();
+        that.options.push({
+          label: label, value: value, valueType: valueType, color: color,
+        });
+      });
+      // Using the Set to collect unique values and then comparing the count of elements.
+      const un = new Set(this.options.map(function (o) { return o.value; }));
+      if (this.options.length !== un.size) {
+        // console.log('configuration error - values not unique ');
+        $('#configError').text('Values must be unique');
+        $('#configError').show();
+      } else if (this.options.length < 2) {
+        // console.log('configuration error - at least 2 options needed');
+        $('#configError').text('Configure at least two options');
+        $('#configError').show();
+      } else {
+        // options valid
+        $('#configError').hide();
+      }
+    }
+
+    if (this.options) {
+      validate();
+    }
   },
   oneditsave: function () {
     const node = this;

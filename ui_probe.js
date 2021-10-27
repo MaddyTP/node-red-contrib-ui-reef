@@ -8,6 +8,7 @@ module.exports = function (RED) {
     }
     return true;
   }
+
   function HTML(config) {
     config.id = config.id.replace('.', '_');
     const configAsJson = JSON.stringify(config);
@@ -28,6 +29,7 @@ module.exports = function (RED) {
        `;
     return html;
   }
+
   let ui;
   function ProbeNode(config) {
     this.decimal = Number(config.decimal);
@@ -37,7 +39,6 @@ module.exports = function (RED) {
     this.maxin = Number(config.maxin);
     this.maxout = Number(config.maxout);
     const node = this;
-    let oldMsg = {};
     try {
       if (checkConfig(node, config)) {
         if (ui === undefined) {
@@ -63,12 +64,9 @@ module.exports = function (RED) {
           forwardInputMessages: true,
           storeFrontEndInputAsState: true,
           convertBack: function (data) {
-            if (data) {
-              return parseFloat(data.value);
-            }
+            return parseFloat(data.value);
           },
           convert: function (value, oldValue, msg) {
-            oldMsg = msg;
             if (!oldValue) {
               oldValue = { plot: [], value: 0 };
             }
@@ -86,7 +84,17 @@ module.exports = function (RED) {
                 value = [];
               } else if (value[0].hasOwnProperty('x') && value[0].hasOwnProperty('y')) {
                 for (let dd = 0; dd < value.length; dd += 1) {
-                  if (Number.isNaN(value[dd].x) || Number.isNaN(value[dd].y)) { flag = true; }
+                  if (Number.isNaN(value[dd].x) || Number.isNaN(value[dd].y)) {
+                    flag = true;
+                  } else {
+                    let n = Number(value[dd].y);
+                    if (node.scale) {
+                      if (n < node.minin) { n = node.minin; }
+                      if (n > node.maxin) { n = node.maxin; }
+                      n = (((n - node.minin) / (node.maxin - node.minin)) * (node.maxout - node.minout)) + node.minout;
+                    }
+                    value[dd].y = n.toFixed(node.decimal);
+                  }
                 }
               } else {
                 flag = true;
@@ -129,10 +137,12 @@ module.exports = function (RED) {
             return value;
           },
           beforeEmit: function (msg, value) {
-            const newMsg = {};
-            newMsg.payload = value;
-            newMsg.socketid = msg.socketid;
-            return msg;
+            return {
+              msg: {
+                payload: value,
+                socketid: msg.socketid,
+              },
+            };
           },
           initController: function ($scope) {
             $scope.flag = true;
@@ -140,9 +150,8 @@ module.exports = function (RED) {
             $scope.init = function (config) {
               $scope.config = config;
               $scope.latestValue = '0';
-              const chartBack = $scope.config.widgetColor + '1a';
               const ctx = $(`#uiProbeChart_${$scope.config.id}`);
-              ctx.css('background-color', chartBack);
+              ctx.css('background-color', $scope.config.widgetColor + '1a');
               $scope.jsChart = new Chart(ctx, {
                 type: 'line',
                 data: {
