@@ -1,3 +1,5 @@
+/* eslint-disable global-require */
+/* eslint-disable import/no-dynamic-require */
 const util = require('util');
 const vm = require('vm');
 const path = require('path');
@@ -37,7 +39,7 @@ module.exports = function (RED) {
     return html;
   }
 
-  function sendResults(node, msgs, cloneFirstMessage) {
+  function sendResults(node, msgs) {
     if (msgs == null) { return; }
     if (!util.isArray(msgs)) {
       msgs = [msgs];
@@ -49,14 +51,13 @@ module.exports = function (RED) {
           msgs[m] = [msgs[m]];
         }
         for (let n = 0; n < msgs[m].length; n += 1) {
-          let msg = msgs[m][n];
+          const msg = msgs[m][n];
           if (msg !== null && msg !== undefined) {
             if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !util.isArray(msg)) {
-              if (msgCount === 0 && cloneFirstMessage !== false) {
-                msgs[m][n] = RED.util.cloneMessage(msgs[m][n]);
-                msg = msgs[m][n];
-              }
               msg._msgid = RED.util.generateId();
+              if (msg.hasOwnProperty('toFront')) {
+                node.emit('input', msg);
+              }
               msgCount += 1;
             } else {
               let type = typeof msg;
@@ -99,8 +100,6 @@ module.exports = function (RED) {
       }
     }
   }
-
-  let ui;
 
   function OutletNode(config) {
     this.interval_id = null;
@@ -299,13 +298,13 @@ module.exports = function (RED) {
       }
     }
 
+    let ui;
     Promise.all(moduleLoadPromises).then(function () {
       const context = vm.createContext(sandbox);
       try {
         if (ui === undefined) {
           ui = RED.require('node-red-dashboard')(RED);
         }
-
         config.dark = false;
         if (typeof ui.isDark === 'function') {
           config.dark = ui.isDark();
@@ -374,7 +373,7 @@ module.exports = function (RED) {
               const start = process.hrtime();
               node.script.runInContext(context);
               context.results.then(function (results) {
-                sendResults(node, results, false);
+                sendResults(node, results);
                 const duration = process.hrtime(start);
                 const converted = Math.floor((duration[0] * 1e9 + duration[1]) / 10000) / 100;
                 node.metric('duration', converted);
@@ -420,7 +419,7 @@ module.exports = function (RED) {
           msg.payload = val;
           if (config.topic !== '') { msg.topic = config.topic; }
           setTimeout(function () {
-            sendResults(node, msg, false);
+            sendResults(node, msg);
           }, 3000);
         };
 
@@ -463,6 +462,7 @@ module.exports = function (RED) {
           forwardInputMessages: false,
           storeFrontEndInputAsState: true,
           beforeEmit: function (msg, value) {
+            if (msg._abort === true) { return; }
             msg.payload = value;
             return { msg };
           },
@@ -568,30 +568,16 @@ module.exports = function (RED) {
               switchStateChanged(config.initOpt.value, false);
             };
 
-            // $scope.$watch('msg', function (msg) {
-            //   if (msg && msg._toFront === true) {
-            //     let divIndex = -1;
-            //     $scope.config.options.forEach(function (option, index) {
-            //       if (option.value === msg.payload) {
-            //         divIndex = index;
-            //       }
-            //     });
-            //     if (divIndex >= 0) {
-            //       let inputLbl;
-            //       if ($scope.config.options[divIndex].valueType === 'func') {
-            //         inputLbl = msg.payload;
-            //       } else {
-            //         inputLbl = $scope.config.options[divIndex].label;
-            //       }
-            //       $scope.inputState = inputLbl.toString();
-            //     }
-            //   }
-            // });
+            $scope.$watch('msg', function (msg) {
+              if (msg && msg.hasOwnProperty('toFront')) {
+                $scope.inputState = msg.toFront.toString();
+              }
+            });
           },
         });
 
         node.on('input', function (msg, send, done) {
-          if (msg.topic !== undefined && msg.payload !== undefined) {
+          if (msg.topic !== undefined && msg.payload !== undefined && !msg.hasOwnProperty('toFront')) {
             this.context().set(msg.topic, msg.payload);
           }
           done();
@@ -636,9 +622,9 @@ module.exports = function (RED) {
   RED.library.register('functions');
 
   const uipath = RED.settings.ui.path || 'ui';
-  const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
+  const libPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
 
-  RED.httpNode.get(fullPath, function (req, res) {
+  RED.httpNode.get(libPath, function (req, res) {
     const options = {
       root: `${__dirname}/lib/`,
       dotfiles: 'deny',
