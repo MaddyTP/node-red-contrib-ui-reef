@@ -461,25 +461,52 @@ module.exports = function (RED) {
           emitOnlyNewValues: false,
           forwardInputMessages: false,
           storeFrontEndInputAsState: true,
+          convertBack: function (value) {
+            return value;
+          },
           beforeEmit: function (msg, value) {
-            if (msg._abort === true) { return; }
-            msg.payload = value;
-            return { msg };
+            const newMsg = {};
+            if (msg._abort === false) { return msg; }
+            newMsg.socketid = msg.socketid;
+            newMsg.payload = value;
+            return { msg: newMsg };
           },
           beforeSend: function (msg, orig) {
-            if (config.storestate) { node.context().set('state', orig.msg.option); }
-            if (orig && orig.msg.option.valueType === 'func') {
-              node.repeaterSetup();
-              orig._dontSend = true;
-            } else {
-              node.cancelRepeater();
-              if (config.topic !== '') { msg.topic = config.topic; }
+            if (orig) {
+              const newMsg = {};
+              if (config.storestate) { node.context().set('state', orig.msg.option); }
+              if (orig.msg.option.valueType === 'func') {
+                node.repeaterSetup();
+                orig._dontSend = true;
+              } else {
+                node.cancelRepeater();
+                if (config.topic !== '') { newMsg.topic = config.topic; }
+              }
+              newMsg.payload = orig.msg.payload;
+              return newMsg;
             }
-            msg.payload = orig.msg.payload;
-            return msg;
           },
-          initController: function ($scope) {
+          initController: function ($scope, events) {
             $scope.flag = true;
+            $scope.init = function (config) {
+              $scope.config = config;
+              $scope.containerDiv = $(`#uiOutputContainer_${config.id}`)[0];
+              $scope.sliderDivElement = $(`#uiOutputSlider_${config.id}`)[0];
+              $scope.sliderWrapperElement = $(`#uiOutputSliderWrapper_${config.id}`)[0];
+              const toggleRadioDiv = $scope.containerDiv.firstElementChild;
+              config.options.forEach(function (option, index) {
+                const divElement = document.createElement('div');
+                divElement.setAttribute('class', `ui-output-button ui-output-button-${config.id}`);
+                divElement.setAttribute('id', `uiobtn_${config.id}_${index}`);
+                divElement.innerHTML = option.label;
+                divElement.addEventListener('click', function () {
+                  switchStateChanged(option.value, true);
+                });
+                toggleRadioDiv.appendChild(divElement);
+              });
+              switchStateChanged(config.initOpt.value, false);
+            };
+
             function txtClassToStandOut(bgColor, light, dark) {
               const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
               const r = parseInt(color.substring(0, 2), 16);
@@ -501,12 +528,12 @@ module.exports = function (RED) {
 
             function switchStateChanged(newValue, sendMsg) {
               let divIndex = -1;
-              const newMsg = {};
+              // const newMsg = {};
               $scope.config.options.forEach(function (option, index) {
                 if ($(`#uiobtn_${$scope.config.id}_${index}`).length) {
                   $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'pointer', 'pointer-events': 'auto' });
                   $(`#uiobtn_${$scope.config.id}_${index}`).removeClass('light dark');
-                  if (option.value === newValue) {
+                  if (option.value == newValue+'') {
                     $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'default', 'pointer-events': 'none' });
                     const color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor;
                     $(`#uiobtn_${$scope.config.id}_${index}`).addClass(txtClassToStandOut(color, 'light', 'dark'));
@@ -516,7 +543,7 @@ module.exports = function (RED) {
               });
               if (divIndex >= 0) {
                 let percentage = '0%';
-                newMsg.option = $scope.config.options[divIndex];
+                // newMsg.option = $scope.config.options[divIndex];
                 $scope.inputState = $scope.config.options[divIndex].label;
                 if ($scope.config.options.length > 0 && divIndex >= 0) {
                   percentage = (100 / $scope.config.options.length) * divIndex;
@@ -525,12 +552,12 @@ module.exports = function (RED) {
                     $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
                   }
                 }
-                if ($scope.config.options[divIndex].valueType === 'str') {
-                  newMsg.payload = newValue;
-                }
+                // if ($scope.config.options[divIndex].valueType === 'str') {
+                //   newMsg.payload = newValue;
+                // }
                 if ($scope.config.options[divIndex].valueType === 'num') {
                   newValue = Number(newValue);
-                  newMsg.payload = newValue;
+                  // newMsg.payload = newValue;
                 }
                 if ($scope.config.options[divIndex].valueType === 'bool') {
                   if (newValue === 'true') {
@@ -538,49 +565,39 @@ module.exports = function (RED) {
                   } else {
                     newValue = false;
                   }
-                  newMsg.payload = newValue;
+                  // newMsg.payload = newValue;
                 }
                 if ($scope.config.options[divIndex].valueType === 'func') {
-                  newMsg.payload = null;
+                  newValue = null;
                 }
                 if (sendMsg) {
-                  $scope.send(newMsg);
+                  $scope.send({
+                    payload: newValue,
+                    option: $scope.config.options[divIndex],
+                  });
                 }
               }
             }
 
-            $scope.init = function (config) {
-              $scope.config = config;
-              $scope.containerDiv = $(`#uiOutputContainer_${config.id}`)[0];
-              $scope.sliderDivElement = $(`#uiOutputSlider_${config.id}`)[0];
-              $scope.sliderWrapperElement = $(`#uiOutputSliderWrapper_${config.id}`)[0];
-              const toggleRadioDiv = $scope.containerDiv.firstElementChild;
-              config.options.forEach(function (option, index) {
-                const divElement = document.createElement('div');
-                divElement.setAttribute('class', `ui-output-button ui-output-button-${config.id}`);
-                divElement.setAttribute('id', `uiobtn_${config.id}_${index}`);
-                divElement.innerHTML = option.label;
-                divElement.addEventListener('click', function () {
-                  switchStateChanged(option.value, true);
-                });
-                toggleRadioDiv.appendChild(divElement);
-              });
-              switchStateChanged(config.initOpt.value, false);
-            };
-
             $scope.$watch('msg', function (msg) {
-              if (msg && msg.hasOwnProperty('toFront')) {
+              if (!msg) {
+                  return;
+              }
+              if (msg.hasOwnProperty('toFront')) {
                 $scope.inputState = msg.toFront.toString();
+                return;
+              }
+              if (msg.payload) {
+                switchStateChanged(msg.payload.toString(), false);
               }
             });
           },
         });
 
-        node.on('input', function (msg, send, done) {
+        node.on('input', function (msg) {
           if (msg.topic !== undefined && msg.payload !== undefined && !msg.hasOwnProperty('toFront')) {
             this.context().set(msg.topic, msg.payload);
           }
-          done();
         });
 
         node.on('close', function () {

@@ -398,13 +398,13 @@
       options: {
         value: [],
         validate: function (v) {
-          const unique = new Set(v.map(function (o) { return o.valueType.concat(o.value); }));
+          const unique = new Set(v.map(function (o) { return o.value; }));
           return v.length === unique.size && v.length > 1;
         },
       },
       storestate: { value: false },
       topic: { value: '' },
-      func: { value: '\nreturn msg;' },
+      func: { value: '\nreturn;' },
       outputs: { value: 1 },
       noerr: {
         value: 0,
@@ -496,13 +496,8 @@
             }],
           });
           valueField.typedInput('type', option.valueType || 'str');
-          if (option.valueType === 'func') {
-            valueField.typedInput('value', '');
-          } else {
-            valueField.typedInput('value', option.value || `option_${i}`);
-          }
+          valueField.typedInput('value', option.value || `option_${i}`);
           valueField.on('change', function (type, value) {
-            if (type === 'func') { option.value = ''; }
             validate();
           });
           const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
@@ -710,8 +705,9 @@
         optionsList.each(function (i) {
           const option = $(this);
           const label = option.find('.node-input-option-label').val();
-          const value = option.find('.node-input-option-value').typedInput('value');
           const valueType = option.find('.node-input-option-value').typedInput('type');
+          let value = option.find('.node-input-option-value').typedInput('value');
+          if (valueType === 'func') { value = 'func'; }
           const color = option.find('.node-input-option-color').val();
           that.options.push({
             label: label, value: value, valueType: valueType, color: color,
@@ -719,7 +715,7 @@
         });
         // Using the Set to collect unique values and then comparing the count of elements.
         const un = new Set(this.options.map(function (o) {
-          return o.valueType.concat(o.value);
+          return o.value;
         }));
         if (this.options.length !== un.size) {
           // console.log('configuration error - values not unique ');
@@ -746,8 +742,9 @@
       optionsList.each(function (i) {
         const option = $(this);
         const label = option.find('.node-input-option-label').val();
-        const value = option.find('.node-input-option-value').typedInput('value');
         const valueType = option.find('.node-input-option-value').typedInput('type');
+        let value = option.find('.node-input-option-value').typedInput('value');
+        if (valueType === 'func') { value = 'func'; }
         const color = option.find('.node-input-option-color').val();
         node.options.push({
           label, value, valueType, color,
