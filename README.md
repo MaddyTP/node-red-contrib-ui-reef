@@ -13,7 +13,7 @@ Either use the Manage Palette option in the Node-RED Editor menu, or run the fol
 npm install --unsafe-perm node-red-contrib-ui-reef
 ```
 
-### Probe
+## Probe
 
 Probe accepts two types of data, live data and stored data.  Live data can be fed via `msg.payload` or stored data via an array of objects with an `x` and `y` property:
 
@@ -34,27 +34,27 @@ When providing data for the time scale, this node uses timestamps defined as mil
 
 Value on the right will show most recent datapoint whether that be live data or stored data.  If a symbol is specified it will be appended to this value only.
 
-#### Options
+**Options:**
 Timeframe: sets the timeframe for data to be displayed in chart.
 Rounding: rounds input value to specified decimal places.
 Symbol: appends specified symbol to most recent value.
 Map value to range: maps input values to specified range.
 
-### Output
+## Output
 
 Output node is a highly modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) and the Node-Red Function node.  In essence, it's a modified combination allowing for a function to be run on a set interval instead of on incoming `msg`.
 
 Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  Switch options with static or non-function values can be added in conjunction with one function option.  
 
-#### Options
+**Options:**
 Restore: on Node-red restart, restores switch value from context.  Only works if context is stored in "localfilesystem".
 Colors: allows specific colors to be set for switch options.
 
-### Input
+## Input
 
 Input node is a modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) which sets switch based on input value.  
 
-#### Options
+**Options:**
 Colors: allows specific colors to be set for switch options.
 Input: allows `msg` property to be specified.
 
