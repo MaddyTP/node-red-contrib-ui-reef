@@ -55,8 +55,9 @@ module.exports = function (RED) {
           if (msg !== null && msg !== undefined) {
             if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !util.isArray(msg)) {
               msg._msgid = RED.util.generateId();
-              if (msg.hasOwnProperty('toFront')) {
-                node.emit('input', msg);
+              if(msg.hasOwnProperty('toFront')){ 
+                node.emit('input', { toFront: msg.toFront });
+                delete msg.toFront;
               }
               msgCount += 1;
             } else {
@@ -103,7 +104,7 @@ module.exports = function (RED) {
 
   function OutletNode(config) {
     this.interval_id = null;
-    this.repeat = config.repeat;
+    this.repeat = config.repeat * parseInt(config.repeatUnit);
     const node = this;
     node.name = config.name;
     node.label = config.label;
@@ -367,43 +368,48 @@ module.exports = function (RED) {
 
         RED.nodes.createNode(node, config);
 
+        node.repeater = function () {
+          const start = process.hrtime();
+          node.script.runInContext(context);
+          context.results.then(function (results) {
+            sendResults(node, results);
+            const duration = process.hrtime(start);
+            const converted = Math.floor((duration[0] * 1e9 + duration[1]) / 10000) / 100;
+            node.metric('duration', converted);
+          }).catch(function (err) {
+            if ((typeof err === 'object') && err.hasOwnProperty('stack')) {
+              const index = err.stack.search(/\n\s*at ContextifyScript.Script.runInContext/);
+              err.stack = err.stack.slice(0, index).split('\n').slice(0, -1).join('\n');
+              const stack = err.stack.split(/\r?\n/);
+              let line = 0;
+              let errorMessage;
+              if (stack.length > 0) {
+                while (line < stack.length && stack[line].indexOf('ReferenceError') !== 0) {
+                  line += 1;
+                }
+                if (line < stack.length) {
+                  errorMessage = stack[line];
+                  const m = /:(\d+):(\d+)$/.exec(stack[line + 1]);
+                  if (m) {
+                    const lineno = Number(m[1]) - 1;
+                    const cha = m[2];
+                    errorMessage += ' (line ' + lineno + ', col ' + cha + ')';
+                  }
+                }
+              }
+              if (!errorMessage) {
+                errorMessage = err.toString();
+              }
+              node.error(errorMessage);
+            }
+          });
+        };
+
         node.repeaterSetup = function () {
           if (this.repeat && !Number.isNaN(this.repeat) && this.interval_id === null) {
+            node.repeater();
             this.interval_id = setInterval(function () {
-              const start = process.hrtime();
-              node.script.runInContext(context);
-              context.results.then(function (results) {
-                sendResults(node, results);
-                const duration = process.hrtime(start);
-                const converted = Math.floor((duration[0] * 1e9 + duration[1]) / 10000) / 100;
-                node.metric('duration', converted);
-              }).catch(function (err) {
-                if ((typeof err === 'object') && err.hasOwnProperty('stack')) {
-                  const index = err.stack.search(/\n\s*at ContextifyScript.Script.runInContext/);
-                  err.stack = err.stack.slice(0, index).split('\n').slice(0, -1).join('\n');
-                  const stack = err.stack.split(/\r?\n/);
-                  let line = 0;
-                  let errorMessage;
-                  if (stack.length > 0) {
-                    while (line < stack.length && stack[line].indexOf('ReferenceError') !== 0) {
-                      line += 1;
-                    }
-                    if (line < stack.length) {
-                      errorMessage = stack[line];
-                      const m = /:(\d+):(\d+)$/.exec(stack[line + 1]);
-                      if (m) {
-                        const lineno = Number(m[1]) - 1;
-                        const cha = m[2];
-                        errorMessage += ' (line ' + lineno + ', col ' + cha + ')';
-                      }
-                    }
-                  }
-                  if (!errorMessage) {
-                    errorMessage = err.toString();
-                  }
-                  node.error(errorMessage);
-                }
-              });
+              node.repeater();
             }, this.repeat);
             node.outstandingIntervals.push(this.interval_id);
           }
@@ -420,7 +426,7 @@ module.exports = function (RED) {
           if (config.topic !== '') { msg.topic = config.topic; }
           setTimeout(function () {
             sendResults(node, msg);
-          }, 3000);
+          }, 5000);
         };
 
         if (config.storestate) {
@@ -466,7 +472,7 @@ module.exports = function (RED) {
           },
           beforeEmit: function (msg, value) {
             const newMsg = {};
-            if (msg._abort === false) { return msg; }
+            if (msg.toFront) { newMsg.toFront = msg.toFront; }
             newMsg.socketid = msg.socketid;
             newMsg.payload = value;
             return { msg: newMsg };
@@ -528,12 +534,11 @@ module.exports = function (RED) {
 
             function switchStateChanged(newValue, sendMsg) {
               let divIndex = -1;
-              // const newMsg = {};
               $scope.config.options.forEach(function (option, index) {
                 if ($(`#uiobtn_${$scope.config.id}_${index}`).length) {
                   $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'pointer', 'pointer-events': 'auto' });
                   $(`#uiobtn_${$scope.config.id}_${index}`).removeClass('light dark');
-                  if (option.value == newValue+'') {
+                  if (option.value == newValue + '') {
                     $(`#uiobtn_${$scope.config.id}_${index}`).css({ cursor: 'default', 'pointer-events': 'none' });
                     const color = $scope.config.useThemeColors ? $scope.config.widgetColor : option.color ? option.color : $scope.config.widgetColor;
                     $(`#uiobtn_${$scope.config.id}_${index}`).addClass(txtClassToStandOut(color, 'light', 'dark'));
@@ -543,7 +548,6 @@ module.exports = function (RED) {
               });
               if (divIndex >= 0) {
                 let percentage = '0%';
-                // newMsg.option = $scope.config.options[divIndex];
                 $scope.inputState = $scope.config.options[divIndex].label;
                 if ($scope.config.options.length > 0 && divIndex >= 0) {
                   percentage = (100 / $scope.config.options.length) * divIndex;
@@ -552,12 +556,8 @@ module.exports = function (RED) {
                     $scope.sliderDivElement.style.backgroundColor = $scope.config.options[divIndex].color;
                   }
                 }
-                // if ($scope.config.options[divIndex].valueType === 'str') {
-                //   newMsg.payload = newValue;
-                // }
                 if ($scope.config.options[divIndex].valueType === 'num') {
                   newValue = Number(newValue);
-                  // newMsg.payload = newValue;
                 }
                 if ($scope.config.options[divIndex].valueType === 'bool') {
                   if (newValue === 'true') {
@@ -565,15 +565,12 @@ module.exports = function (RED) {
                   } else {
                     newValue = false;
                   }
-                  // newMsg.payload = newValue;
-                }
-                if ($scope.config.options[divIndex].valueType === 'func') {
-                  newValue = null;
                 }
                 if (sendMsg) {
                   $scope.send({
                     payload: newValue,
                     option: $scope.config.options[divIndex],
+                    _replay: true,
                   });
                 }
               }
@@ -585,17 +582,16 @@ module.exports = function (RED) {
               }
               if (msg.hasOwnProperty('toFront')) {
                 $scope.inputState = msg.toFront.toString();
-                return;
               }
-              if (msg.payload) {
-                switchStateChanged(msg.payload.toString(), false);
+              if (msg._replay) {
+                switchStateChanged(msg.payload, false);
               }
             });
           },
         });
 
         node.on('input', function (msg) {
-          if (msg.topic !== undefined && msg.payload !== undefined && !msg.hasOwnProperty('toFront')) {
+          if (msg.topic !== undefined && msg.payload !== undefined) {
             this.context().set(msg.topic, msg.payload);
           }
         });

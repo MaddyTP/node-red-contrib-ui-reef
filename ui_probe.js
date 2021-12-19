@@ -33,6 +33,7 @@ module.exports = function (RED) {
   let ui;
   function ProbeNode(config) {
     this.decimal = Number(config.decimal);
+    this.symbol = config.symbol;
     this.scale = config.scale;
     this.minin = Number(config.minin);
     this.minout = Number(config.minout);
@@ -84,7 +85,7 @@ module.exports = function (RED) {
                 value = [];
               } else if (value[0].hasOwnProperty('x') && value[0].hasOwnProperty('y')) {
                 for (let dd = 0; dd < value.length; dd += 1) {
-                  if (Number.isNaN(value[dd].x) || Number.isNaN(value[dd].y)) {
+                  if (Number.isNaN(value[dd].y)) {
                     flag = true;
                   } else {
                     let n = Number(value[dd].y);
@@ -132,7 +133,7 @@ module.exports = function (RED) {
               }
             }
             oldValue.plot = tmp;
-            oldValue.value = latestValue;
+            oldValue.value = latestValue + node.symbol;
             value = oldValue;
             return value;
           },
@@ -160,7 +161,7 @@ module.exports = function (RED) {
                     borderWidth: 2,
                     data: [],
                     fill: false,
-                    tension: 0.4,
+                    tension: 0.2,
                     pointRadius: 0,
                   }],
                 },

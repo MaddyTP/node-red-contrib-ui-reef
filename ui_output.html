@@ -118,11 +118,17 @@
         <div id="func-tab-body" style="display:none">
             <div class="form-row">
                 <label for="node-input-outputs" style="width: 100px"><i class="fa fa-random"></i> Outputs:</label>
-                <input id="node-input-outputs" style="width: 80px;" value="1">
+                <input id="node-input-outputs" style="width: 50px;" value="1">
             </div>
             <div class="form-row">
                 <label for="inject-time-interval-count" style="width: 100px"><i class="fa fa-repeat"></i> Interval:</label>
-                <input id="inject-time-interval-count" style="width: 80px;" value="5000">
+                <input id="inject-time-interval-count" style="width: 50px;" value="5">
+                <select id="node-input-repeatUnit" style="width:120px;">
+                  <option value="1">Millisecond</option>
+                  <option value="1000">Seconds</option>
+                  <option value="60000">Minutes</option>
+                  <option value="3600000">Hours</option>
+              </select>
             </div>
             <div class="form-row node-text-editor-row" style="position:relative">
                 <div style="height: 100px; min-height:100px;" class="node-text-editor" id="node-input-func-editor" ></div>
@@ -443,6 +449,10 @@
           return ((v === '') || (RED.validators.number(v) && (v >= 1) && (v <= 2147483)));
         },
       },
+      repeatUnit: {
+        value: '1000', 
+        required: true,
+      },
     },
     inputs: 1,
     outputs: 1,
@@ -498,6 +508,7 @@
           valueField.typedInput('type', option.valueType || 'str');
           valueField.typedInput('value', option.value || `option_${i}`);
           valueField.on('change', function (type, value) {
+            if(type === 'func'){ this.typedInput('value', 'func'); }
             validate();
           });
           const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
@@ -588,7 +599,7 @@
       //   label: 'On Stop',
       // });
 
-      tabs.activateTab('func-tab-body');
+      tabs.activateTab('func-tab-config');
 
       $('#node-input-outputs').spinner({
         min: 0,
@@ -706,8 +717,7 @@
           const option = $(this);
           const label = option.find('.node-input-option-label').val();
           const valueType = option.find('.node-input-option-value').typedInput('type');
-          let value = option.find('.node-input-option-value').typedInput('value');
-          if (valueType === 'func') { value = 'func'; }
+          const value = option.find('.node-input-option-value').typedInput('value');
           const color = option.find('.node-input-option-color').val();
           that.options.push({
             label: label, value: value, valueType: valueType, color: color,
@@ -743,8 +753,8 @@
         const option = $(this);
         const label = option.find('.node-input-option-label').val();
         const valueType = option.find('.node-input-option-value').typedInput('type');
-        let value = option.find('.node-input-option-value').typedInput('value');
-        if (valueType === 'func') { value = 'func'; }
+        const value = option.find('.node-input-option-value').typedInput('value');
+        // if (valueType === 'func') { value = 'func'; }
         const color = option.find('.node-input-option-color').val();
         node.options.push({
           label, value, valueType, color,
