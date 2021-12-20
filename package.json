@@ -1,5 +1,5 @@
 {
-  "name": "red-contrib-ui-reef",
+  "name": "node-red-contrib-ui-reef",
   "version": "1.0.0",
   "description": "Set of UI nodes for aquarium automation.",
   "repository": {
