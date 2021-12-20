@@ -42,11 +42,11 @@ Value on the right will show most recent datapoint whether that be live data or 
 
 ![image](https://user-images.githubusercontent.com/45469378/146694977-60294bd5-ef14-4466-bfb1-3784107c5538.png)
 
-Output node is a highly modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) and the Node-Red Function node.  In essence, it provides a switch option to run a function on interval instead of on incoming `msg`.  Function runs initially when the switch is set to the function option then repeats on the specified interval.  Changing switch position to any other option will cancel the interval and send static value associated with selected option.  
+Output node is a highly modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) and the Node-Red Function node.  In essence, it provides a switch option to run a function on interval instead of on incoming `msg`.  
 
-Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.
+![image](https://user-images.githubusercontent.com/45469378/146825047-ffd5d5c4-20c0-4af7-86b3-aa49d00e6ddc.png)
 
-The "Restore" option will load switch state from context on Node-red restart if Node-red context settings specify "localfilestorage".  
+Function runs initially when the switch is set to the function option then repeats on the specified interval.  Changing switch position to any other option will cancel the interval and send static value associated with selected option.  Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.  The "Restore" option will load switch state from context on Node-red restart if Node-red context settings specify "localfilestorage".  
 
 ## Input
 
