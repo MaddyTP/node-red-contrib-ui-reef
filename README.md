@@ -46,7 +46,11 @@ Output node is a highly modified fork of [node-red-contrib-ui-multistate-switch]
 
 ![image](https://user-images.githubusercontent.com/45469378/146825047-ffd5d5c4-20c0-4af7-86b3-aa49d00e6ddc.png)
 
-Function runs initially when the switch is set to the function option then repeats on the specified interval.  Changing switch position to any other option will cancel the interval and send static value associated with selected option.  Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.  The "Restore" option will load switch state from context on Node-red restart if Node-red context settings specify "localfilestorage".  
+Function runs initially when the switch is set to the function option then repeats on the specified interval.  Changing switch position to any other option will cancel the interval and send static value associated with selected option.  
+
+![image](https://user-images.githubusercontent.com/45469378/146826377-84ab1d40-96f7-4ed5-b507-7e0d9cecb6ee.png)
+
+Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.  The "Restore" option will load switch state from context on Node-red restart if Node-red context settings specify "localfilestorage".  
 
 ## Input
 
