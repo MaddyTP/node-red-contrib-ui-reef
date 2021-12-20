@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/MaddyTP/node-red-contrib-ui-reef#readme",
   "node-red": {
+    "version": ">=1.0.0",
     "nodes": {
       "ui_probe": "ui_probe.js",
       "ui_output": "ui_output.js",
@@ -39,5 +40,11 @@
     "eslint-plugin-html": "^6.2.0",
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-node": "^11.1.0"
+  },
+  "peerDependencies": {
+    "node-red-dashboard": ">=2.10.0"
+  },
+  "engines": {
+    "node": ">=12"
   }
 }

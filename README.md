@@ -3,7 +3,7 @@
 [![platform](https://img.shields.io/badge/platform-Node--RED-red)](https://nodered.org)
 
 
-This set of Node-Red nodes are inteded to be used to create an interactive dashboard for reef and freshwater aquarium controllers.  These nodes are designed to work specifically with Node-Red-Dashboard (min v2.10.0) which must be installed first.
+This set of Node-Red nodes are inteded to be used to create an interactive dashboard for reef and freshwater aquarium controllers.  Node-Red-Dashboard (min v2.10.0) is required and must be installed first.
 
 ![image](https://user-images.githubusercontent.com/45469378/146694931-4b29cefe-bff7-48d8-b2ff-3cca6dedfff5.png)
 
@@ -58,6 +58,6 @@ Input node is a modified fork of [node-red-contrib-ui-multistate-switch](https:/
 
 These nodes would not be possible without the work of the following:
 
-* barbutenaers / hotNipi - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
+* @barbutenaers / @hotNipi - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
 * Node-Red Team - Function node
 * Node-Red-Dashboard Team - Chart node
