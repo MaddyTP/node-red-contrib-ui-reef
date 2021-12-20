@@ -36,7 +36,7 @@ Stored data:
 
 When providing data for the time scale, this node uses timestamps defined as milliseconds since the epoch (midnight January 1, 1970, UTC) internally. However, it will also accept most datetime formats by way of the included chartjs-adapter-moment plugin.  
 
-Value on the right will show most recent datapoint whether that be live data or stored data.  If a symbol is specified it will be appended to this value only.  Regardless of iput data, the time component will be validated against the specified timeframe and older values dropped.  Additionally, there are options to round values to a specific decimal place and/or map value(s) to a range.
+Value on the right will show most recent datapoint whether that be live data or stored data.  If a symbol is specified it will be appended to this value only.  Regardless of input data, the time component will be validated against the specified timeframe and older values dropped.  Additionally, there are options to round values to a decimal place and/or map value(s) to a range.
 
 ## Output
 
