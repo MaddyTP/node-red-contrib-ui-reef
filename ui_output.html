@@ -109,12 +109,6 @@
                 <ol id="node-input-libs-container"></ol>
             </div>
         </div>
-        <!-- <div id="func-tab-init" style="display:none">
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-init-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-init-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
-            </div>
-        </div> -->
         <div id="func-tab-body" style="display:none">
             <div class="form-row">
                 <label for="node-input-outputs" style="width: 100px"><i class="fa fa-random"></i> Outputs:</label>
@@ -135,18 +129,11 @@
                 <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
         </div>
-        <!-- <div id="func-tab-finalize" style="display:none">
-            <div class="form-row node-text-editor-row" style="position:relative">
-                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-finalize-editor" ></div>
-                <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-finalize-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
-            </div>
-        </div> -->
     </div>
 </script>
 <script type="text/html" data-help-name="ui_output">
     <p>A UI node to show a switch with multiple states in the Node-RED dashboard.</p>
 </script>
-
 <script type="text/javascript">
 (function () {
   const invalidModuleVNames = [
@@ -167,7 +154,6 @@
     'clearInterval',
     'promisify',
   ];
-
   const knownFunctionNodes = {};
   RED.events.on('nodes:add', function (n) {
     if (n.type === 'function') {
@@ -179,7 +165,6 @@
       delete knownFunctionNodes[n.id];
     }
   });
-
   let missingModules = [];
   let missingModuleReasons = {};
   RED.events.on('runtime-state', function (event) {
@@ -201,10 +186,8 @@
     }
     RED.view.redraw();
   });
-
   let installAllowList = ['*'];
   let installDenyList = [];
-
   let modulesEnabled = true;
   if (RED.settings.get('externalModules.modules.allowInstall', true) === false) {
     modulesEnabled = false;
@@ -217,9 +200,7 @@
   }
   installAllowList = RED.utils.parseModuleList(installAllowList);
   installDenyList = RED.utils.parseModuleList(installDenyList);
-
   const allLibs = [];
-
   function moduleName(module) {
     const match = /^([^@]+)@(.+)/.exec(module);
     if (match) {
@@ -227,7 +208,6 @@
     }
     return [module, undefined];
   }
-
   function getAllUsedModules() {
     const moduleSet = new Set();
     for (const id in knownFunctionNodes) {
@@ -245,7 +225,6 @@
     modules.sort();
     return modules;
   }
-
   function prepareLibraryConfig(node) {
     $('.node-input-libs-row').show();
     const usedModules = getAllUsedModules();
@@ -257,7 +236,6 @@
     typedModules.push({
       value: '_custom_', label: RED._('editor:subflow.licenseOther'), icon: 'red/images/typedInput/az.svg',
     });
-
     const libList = $('#node-input-libs-container').css('min-height', '200px').css('min-width', '250px').editableList({
       header: $('<div><div data-i18n="node-red:function.require.moduleName"></div><div data-i18n="node-red:function.require.importAs"></div></div>'),
       addItem(container, i, opt) {
@@ -283,15 +261,12 @@
             val = fmodule.val();
           }
           const errors = [];
-
           if (!RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList)) {
             return RED._('node-red:function.error.moduleNotAllowed', { module: val });
           }
           return RED._('node-red:function.error.moduleLoadError', { module: val, error: missingModuleReasons[val] });
         });
-
         const fvarSpan = $('<span>').appendTo(row0);
-
         const fvar = $('<input/>', {
           class: 'node-input-libs-var red-ui-font-code',
           placeholder: RED._('node-red:function.require.var'),
@@ -306,7 +281,6 @@
           }
           return RED._('node-red:function.error.moduleNameError', { name: val });
         });
-
         fvar.on('change keyup paste', function (e) {
           const v = $(this).val().trim();
           if (v === '' || / /.test(v) || invalidModuleVNames.indexOf(v) !== -1) {
@@ -317,7 +291,6 @@
             vnameWarning.removeClass('input-error');
           }
         });
-
         fmodule.on('change keyup paste', function (e) {
           let val = $(this).typedInput('type');
           if (val === '_custom_') {
@@ -326,7 +299,6 @@
           const varName = val.trim().replace(/^@/, '').replace(/@.*$/, '').replace(/[-_/].?/g, function (v) { return (v[1] ? v[1].toUpperCase() : ''); });
           fvar.val(varName);
           fvar.trigger('change');
-
           if (RED.utils.checkModuleAllowed(val, null, installAllowList, installDenyList) && (missingModules.indexOf(val) === -1)) {
             fmodule.removeClass('input-error');
             moduleWarning.removeClass('input-error');
@@ -348,13 +320,11 @@
       },
       removable: true,
     });
-
     const libs = node.libs || [];
     for (let i = 0, l = libs.length; i < l; i += 1) {
       libList.editableList('addItem', libs[i]);
     }
   }
-
   function getLibsList() {
     const _libs = [];
     if (RED.settings.functionExternalModules !== false) {
@@ -378,7 +348,6 @@
     }
     return _libs;
   }
-
   RED.nodes.registerType('ui_output', {
     category: 'UI Reef',
     color: 'rgb( 63, 173, 181)',
@@ -463,22 +432,10 @@
     labelStyle: function () { return (this.name ? 'node_label_italic' : ''); },
     oneditprepare: function () {
       const that = this;
-      // const un = new Set(this.options.map(function (o) { return o.value; }));
-      // if (this.options.length !== un.size) {
-      //   $('#configError').text('Values must be unique');
-      //   $('#configError').show();
-      // } else if (this.options.length < 2) {
-      //   $('#configError').text('Configure at least two options');
-      //   $('#configError').show();
-      // } else {
-      //   $('#configError').hide();
-      // }
-
       $('#node-input-size').elementSizer({
         width: '#node-input-width',
         group: '#node-input-group',
       });
-
       function getColor(idx) {
         const colors = ['#009933', '#999999', '#ff6666', '#009999', '#cccc00', '#ff33cc', '#cc6600',
           '#99ff66', '#660033',
@@ -488,7 +445,6 @@
         }
         return colors[idx];
       }
-
       const optionsList = $('#node-input-opts-container').css('min-height', '200px').editableList({
         header: $('<div>').append($.parseHTML(
           "<div style='width:40%; display: inline-grid'><b>Label</b></div>"
@@ -508,7 +464,6 @@
           valueField.typedInput('type', option.valueType || 'str');
           valueField.typedInput('value', option.value || `option_${i}`);
           valueField.on('change', function (type, value) {
-            if(type === 'func'){ this.typedInput('value', 'func'); }
             validate();
           });
           const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
@@ -522,7 +477,6 @@
         removable: true,
         sortable: true,
       });
-
       if (this.options) {
         this.options.forEach(function (option, index) {
           optionsList.editableList('addItem', {
@@ -530,7 +484,6 @@
           });
         });
       }
-
       $('#node-input-useThemeColors').on('change', function () {
         const colorFields = $('.node-input-option-color');
         if ($(this)[0].checked) {
@@ -539,15 +492,7 @@
           colorFields.show();
         }
       });
-
       $('#node-input-doubleClickZoomEnabled').change();
-
-      // $('#node-input-stateField').val(this.stateField);
-      // $('#node-input-stateField').typedInput({
-      //   types: ['msg'],
-      //   default: 'msg',
-      // });
-
       $('#inject-time-interval-count').spinner({
         min: 1,
         change(event, ui) {
@@ -556,10 +501,8 @@
           if (value !== this.value) { $(this).spinner('value', value); }
         },
       });
-
       const c = this.repeat;
       $('#inject-time-interval-count').val(c);
-
       const tabs = RED.tabs.create({
         id: 'func-tabs',
         onchange(tab) {
@@ -574,33 +517,17 @@
           }
         },
       });
-
       tabs.addTab({
         id: 'func-tab-config',
         iconClass: 'fa fa-cog',
         label: 'Setup',
       });
-
-      // tabs.addTab({
-      //   id: 'func-tab-init',
-      //   iconClass: 'fa fa-play',
-      //   label: 'On Start',
-      // });
-
       tabs.addTab({
         id: 'func-tab-body',
         iconClass: 'fa fa-repeat',
         label: 'On Interval',
       });
-
-      // tabs.addTab({
-      //   id: 'func-tab-finalize',
-      //   iconClass: 'fa fa-stop',
-      //   label: 'On Stop',
-      // });
-
       tabs.activateTab('func-tab-config');
-
       $('#node-input-outputs').spinner({
         min: 0,
         change(event, ui) {
@@ -609,7 +536,6 @@
           if (value !== this.value) { $(this).spinner('value', value); }
         },
       });
-
       function buildEditor(id, value, defaultValue, extraLibs) {
         const editor = RED.editor.createEditor({
           id,
@@ -635,10 +561,7 @@
         }
         return editor;
       }
-      // this.initEditor = buildEditor('node-input-init-editor', $('#node-input-initialize').val(), RED._('node-red:function.text.initialize'));
       this.editor = buildEditor('node-input-func-editor', $('#node-input-func').val(), undefined, that.libs || []);
-      // this.finalizeEditor = buildEditor('node-input-finalize-editor', $('#node-input-finalize').val(), RED._('node-red:function.text.finalize'));
-
       RED.library.create({
         url: 'functions',
         type: 'function',
@@ -646,24 +569,6 @@
         mode: 'ace/mode/nrjavascript',
         fields: [
           'name', 'outputs',
-          // {
-          //   name: 'initialize',
-          //   get() {
-          //     return that.initEditor.getValue();
-          //   },
-          //   set(v) {
-          //     that.initEditor.setValue(v || RED._('node-red:function.text.initialize'), -1);
-          //   },
-          // },
-          // {
-          //   name: 'finalize',
-          //   get() {
-          //     return that.finalizeEditor.getValue();
-          //   },
-          //   set(v) {
-          //     that.finalizeEditor.setValue(v || RED._('node-red:function.text.finalize'), -1);
-          //   },
-          // },
           {
             name: 'info',
             get() {
@@ -677,7 +582,6 @@
         ext: 'js',
       });
       this.editor.focus();
-
       const expandButtonClickHandler = function (editor) {
         return function (e) {
           e.preventDefault();
@@ -697,19 +601,12 @@
           });
         };
       };
-      // $('#node-init-expand-js').on('click', expandButtonClickHandler(this.initEditor));
       $('#node-function-expand-js').on('click', expandButtonClickHandler(this.editor));
-      // $('#node-finalize-expand-js').on('click', expandButtonClickHandler(this.finalizeEditor));
-      // RED.popover.tooltip($('#node-init-expand-js'), RED._('node-red:common.label.expand'));
       RED.popover.tooltip($('#node-function-expand-js'), RED._('node-red:common.label.expand'));
-      // RED.popover.tooltip($('#node-finalize-expand-js'), RED._('node-red:common.label.expand'));
-
       if (RED.settings.functionExternalModules !== false) {
         prepareLibraryConfig(that);
       }
-
       function validate() {
-        // Copy all the options from the editableList to this node
         const that = this;
         this.options = [];
         const optionsList = $('#node-input-opts-container').editableList('items');
@@ -723,24 +620,19 @@
             label: label, value: value, valueType: valueType, color: color,
           });
         });
-        // Using the Set to collect unique values and then comparing the count of elements.
         const un = new Set(this.options.map(function (o) {
           return o.value;
         }));
         if (this.options.length !== un.size) {
-          // console.log('configuration error - values not unique ');
           $('#configError').text('Values must be unique');
           $('#configError').show();
         } else if (this.options.length < 2) {
-          // console.log('configuration error - at least 2 options needed');
           $('#configError').text('Configure at least two options');
           $('#configError').show();
         } else {
-          // options valid
           $('#configError').hide();
         }
       }
-
       if (this.options) {
         validate();
       }
@@ -753,20 +645,17 @@
         const option = $(this);
         const label = option.find('.node-input-option-label').val();
         const valueType = option.find('.node-input-option-value').typedInput('type');
-        const value = option.find('.node-input-option-value').typedInput('value');
-        // if (valueType === 'func') { value = 'func'; }
+        let value = option.find('.node-input-option-value').typedInput('value');
+        if (valueType === 'func') { value = 'func'; }
         const color = option.find('.node-input-option-color').val();
         node.options.push({
           label, value, valueType, color,
         });
       });
-
       const count = $('#inject-time-interval-count').val();
       node.repeat = count;
-
       let noerr = 0;
       $('#node-input-noerr').val(0);
-
       const disposeEditor = function (editorName, targetName, defaultValue) {
         const editor = node[editorName];
         const annot = editor.getSession().getAnnotations();
@@ -787,24 +676,14 @@
         $(`#${targetName}`).val(val);
       };
       disposeEditor('editor', 'node-input-func');
-      // disposeEditor('initEditor', 'node-input-initialize', RED._('node-red:function.text.initialize'));
-      // disposeEditor('finalizeEditor', 'node-input-finalize', RED._('node-red:function.text.finalize'));
-
       $('#node-input-noerr').val(noerr);
       this.noerr = noerr;
       node.libs = getLibsList();
     },
     oneditcancel: function () {
       const node = this;
-
       node.editor.destroy();
       delete node.editor;
-
-      // node.initEditor.destroy();
-      // delete node.initEditor;
-
-      // node.finalizeEditor.destroy();
-      // delete node.finalizeEditor;
     },
     oneditresize: function (size) {
       const rows = $('#dialog-form>div:not(.node-text-editor-row)');
@@ -815,15 +694,9 @@
       const editorRow = $('#dialog-form>div.node-text-editor-row');
       dialogHeight -= (parseInt(editorRow.css('marginTop'), 10) + parseInt(editorRow.css('marginBottom'), 10));
       $('#dialog-form .node-text-editor').css('height', `${dialogHeight}px`);
-
       const { height } = size;
-      // $('#node-input-init-editor').css('height', ((height - 80)) + 'px');
       $('#node-input-func-editor').css('height', (height - 172) + 'px');
-      // $('#node-input-finalize-editor').css('height', ((height - 80)) + 'px');
-
-      // this.initEditor.resize();
       this.editor.resize();
-      // this.finalizeEditor.resize();
     },
   });
 }());

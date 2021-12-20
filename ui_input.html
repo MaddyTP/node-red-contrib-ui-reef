@@ -79,22 +79,10 @@ RED.nodes.registerType('ui_input', {
   labelStyle: function () { return (this.name ? 'node_label_italic' : ''); },
   oneditprepare: function () {
     const that = this;
-    // const un = new Set(this.options.map(function (o) { return o.value; }));
-    // if (this.options.length !== un.size) {
-    //   $('#configError').text('Values must be unique');
-    //   $('#configError').show();
-    // } else if (this.options.length < 2) {
-    //   $('#configError').text('Configure at least two options');
-    //   $('#configError').show();
-    // } else {
-    //   $('#configError').hide();
-    // }
-
     $('#node-input-size').elementSizer({
       width: '#node-input-width',
       group: '#node-input-group',
     });
-
     function getColor(idx) {
       const colors = ['#009933', '#999999', '#ff6666', '#009999', '#cccc00', '#ff33cc', '#cc6600',
         '#99ff66', '#660033',
@@ -104,7 +92,6 @@ RED.nodes.registerType('ui_input', {
       }
       return colors[idx];
     }
-
     const optionsList = $('#node-input-opts-container').css('min-height', '165px').editableList({
       header: $('<div>').append($.parseHTML(
         "<div style='width:40%; display: inline-grid'><b>Label</b></div>"
@@ -133,7 +120,6 @@ RED.nodes.registerType('ui_input', {
       removable: true,
       sortable: true,
     });
-
     if (this.options) {
       this.options.forEach(function (option, index) {
         optionsList.editableList('addItem', {
@@ -141,7 +127,6 @@ RED.nodes.registerType('ui_input', {
         });
       });
     }
-
     $('#node-input-useThemeColors').on('change', function () {
       const colorFields = $('.node-input-option-color');
       if ($(this)[0].checked) {
@@ -150,17 +135,13 @@ RED.nodes.registerType('ui_input', {
         colorFields.show();
       }
     });
-
     $('#node-input-doubleClickZoomEnabled').change();
-
     $('#node-input-stateField').val(this.stateField);
     $('#node-input-stateField').typedInput({
       types: ['msg'],
       default: 'msg',
     });
-
     function validate() {
-      // Copy all the options from the editableList to this node
       const that = this;
       this.options = [];
       const optionsList = $('#node-input-opts-container').editableList('items');
@@ -174,22 +155,17 @@ RED.nodes.registerType('ui_input', {
           label: label, value: value, valueType: valueType, color: color,
         });
       });
-      // Using the Set to collect unique values and then comparing the count of elements.
       const un = new Set(this.options.map(function (o) { return o.value; }));
       if (this.options.length !== un.size) {
-        // console.log('configuration error - values not unique ');
         $('#configError').text('Values must be unique');
         $('#configError').show();
       } else if (this.options.length < 2) {
-        // console.log('configuration error - at least 2 options needed');
         $('#configError').text('Configure at least two options');
         $('#configError').show();
       } else {
-        // options valid
         $('#configError').hide();
       }
     }
-
     if (this.options) {
       validate();
     }

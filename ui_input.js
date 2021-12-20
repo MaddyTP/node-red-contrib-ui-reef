@@ -76,7 +76,6 @@ module.exports = function (RED) {
               toggleRadioDiv.appendChild(divElement);
             });
           };
-
           function txtClassToStandOut(bgColor, light, dark) {
             const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
             const r = parseInt(color.substring(0, 2), 16);
@@ -95,7 +94,6 @@ module.exports = function (RED) {
             }
             return (L > 0.35) ? light : dark;
           }
-
           function switchStateChanged(newValue) {
             $scope.config.options.forEach(function (option, index) {
               if ($(`#uiibtn_${$scope.config.id}_${index}`).length) {
@@ -113,7 +111,6 @@ module.exports = function (RED) {
               }
             });
           }
-
           $scope.$watch('msg', function (msg) {
             if (msg && msg.state !== undefined) {
               switchStateChanged(msg.state.toString());
@@ -129,7 +126,7 @@ module.exports = function (RED) {
     }
   }
   RED.nodes.registerType('ui_input', InputNode);
-  const uipath = RED.settings.ui.path || 'ui';
+  const uipath = ((RED.settings.ui || {}).path) || 'ui';
   const fullPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
   RED.httpNode.get(fullPath, function (req, res) {
     const options = {

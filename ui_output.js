@@ -1,5 +1,3 @@
-/* eslint-disable global-require */
-/* eslint-disable import/no-dynamic-require */
 const util = require('util');
 const vm = require('vm');
 const path = require('path');
@@ -38,7 +36,6 @@ module.exports = function (RED) {
       `;
     return html;
   }
-
   function sendResults(node, msgs) {
     if (msgs == null) { return; }
     if (!util.isArray(msgs)) {
@@ -75,7 +72,6 @@ module.exports = function (RED) {
       node.send(msgs);
     }
   }
-
   function createVMOpt(node, kind) {
     const opt = {
       filename: 'Function node' + kind + ':' + node.id + (node.name ? ' [' + node.name + ']' : ''),
@@ -83,7 +79,6 @@ module.exports = function (RED) {
     };
     return opt;
   }
-
   function updateErrorInfo(err) {
     if (err.stack) {
       const stack = err.stack.toString();
@@ -101,7 +96,6 @@ module.exports = function (RED) {
       }
     }
   }
-
   function OutletNode(config) {
     this.interval_id = null;
     this.repeat = config.repeat * parseInt(config.repeatUnit);
@@ -114,11 +108,9 @@ module.exports = function (RED) {
     node.ini = config.initialize ? config.initialize.trim() : '';
     node.fin = config.finalize ? config.finalize.trim() : '';
     node.libs = config.libs || [];
-
     if (RED.settings.functionExternalModules === false && node.libs.length > 0) {
       throw new Error(RED._('function.error.externalModuleNotAllowed'));
     }
-
     const functionText = 'var results = null;'
             + 'results = (async function(){ '
             + 'var node = {'
@@ -136,13 +128,9 @@ module.exports = function (RED) {
             + '};\n'
             + node.func + '\n'
             + '})();';
-
-    // let finScript = null;
-    // let finOpt = null;
     node.outstandingTimers = [];
     node.outstandingIntervals = [];
     node.clearStatus = false;
-
     const sandbox = {
       console,
       util,
@@ -260,7 +248,6 @@ module.exports = function (RED) {
         }
       },
     };
-
     if (util.hasOwnProperty('promisify')) {
       sandbox.setTimeout[util.promisify.custom] = function (after, value) {
         return new Promise(function (resolve, reject) {
@@ -270,7 +257,6 @@ module.exports = function (RED) {
       sandbox.promisify = util.promisify;
     }
     const moduleLoadPromises = [];
-
     if (node.hasOwnProperty('libs')) {
       let moduleErrors = false;
       const modules = node.libs;
@@ -298,7 +284,6 @@ module.exports = function (RED) {
         throw new Error(RED._('function.error.externalModuleLoadError'));
       }
     }
-
     let ui;
     Promise.all(moduleLoadPromises).then(function () {
       const context = vm.createContext(sandbox);
@@ -311,63 +296,8 @@ module.exports = function (RED) {
           config.dark = ui.isDark();
           config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
         }
-
-        // let iniScript = null;
-        // let iniOpt = null;
-        // if (node.ini && (node.ini !== '')) {
-        //   const iniText = `
-        //             (async function(__send__) {
-        //                 var node = {
-        //                     id:__node__.id,
-        //                     name:__node__.name,
-        //                     outputCount:__node__.outputCount,
-        //                     log:__node__.log,
-        //                     error:__node__.error,
-        //                     warn:__node__.warn,
-        //                     debug:__node__.debug,
-        //                     trace:__node__.trace,
-        //                     status:__node__.status,
-        //                     send: function(msgs, cloneMsg) {
-        //                         __node__.send(__send__, RED.util.generateId(), msgs, cloneMsg);
-        //                     }
-        //                 };
-        //                 ` + node.ini + `
-        //             })(__initSend__);`;
-        //   iniOpt = createVMOpt(node, ' setup');
-        //   iniScript = new vm.Script(iniText, iniOpt);
-        // }
-
         node.script = vm.createScript(functionText, createVMOpt(node, ''));
-        // if (node.fin && (node.fin !== '')) {
-        //   const finText = `(function () {
-        //                 var node = {
-        //                     id:__node__.id,
-        //                     name:__node__.name,
-        //                     outputCount:__node__.outputCount,
-        //                     log:__node__.log,
-        //                     error:__node__.error,
-        //                     warn:__node__.warn,
-        //                     debug:__node__.debug,
-        //                     trace:__node__.trace,
-        //                     status:__node__.status,
-        //                     send: function(msgs, cloneMsg) {
-        //                         __node__.error("Cannot send from close function");
-        //                     }
-        //                 };
-        //                 ` + node.fin + `
-        //             })();`;
-        //   finOpt = createVMOpt(node, ' cleanup');
-        //   finScript = new vm.Script(finText, finOpt);
-        // }
-
-        // let promise = Promise.resolve();
-        // if (iniScript) {
-        //   context.__initSend__ = function (msgs) { node.send(msgs); };
-        //   iniScript.runInContext(context, iniOpt);
-        // }
-
         RED.nodes.createNode(node, config);
-
         node.repeater = function () {
           const start = process.hrtime();
           node.script.runInContext(context);
@@ -404,7 +334,6 @@ module.exports = function (RED) {
             }
           });
         };
-
         node.repeaterSetup = function () {
           if (this.repeat && !Number.isNaN(this.repeat) && this.interval_id === null) {
             node.repeater();
@@ -414,12 +343,10 @@ module.exports = function (RED) {
             node.outstandingIntervals.push(this.interval_id);
           }
         };
-
         node.cancelRepeater = function () {
           clearInterval(this.interval_id);
           this.interval_id = null;
         };
-
         node.sendInitial = function (val) {
           const msg = {};
           msg.payload = val;
@@ -428,12 +355,10 @@ module.exports = function (RED) {
             sendResults(node, msg);
           }, 5000);
         };
-
         if (config.storestate) {
           config.initOpt = node.context().get('state');
-          if (config.initOpt === undefined) { config.initOpt = config.options[0]; }
         }
-
+        if (config.initOpt === undefined) { config.initOpt = config.options[0]; }
         switch (config.initOpt.valueType) {
           case ('str'):
             node.sendInitial(config.initOpt.value);
@@ -454,7 +379,6 @@ module.exports = function (RED) {
           default:
             break;
         }
-
         const html = HTML(config);
         const ui_done = ui.addWidget({
           node,
@@ -512,7 +436,6 @@ module.exports = function (RED) {
               });
               switchStateChanged(config.initOpt.value, false);
             };
-
             function txtClassToStandOut(bgColor, light, dark) {
               const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
               const r = parseInt(color.substring(0, 2), 16);
@@ -531,7 +454,6 @@ module.exports = function (RED) {
               }
               return (L > 0.35) ? light : dark;
             }
-
             function switchStateChanged(newValue, sendMsg) {
               let divIndex = -1;
               $scope.config.options.forEach(function (option, index) {
@@ -575,7 +497,6 @@ module.exports = function (RED) {
                 }
               }
             }
-
             $scope.$watch('msg', function (msg) {
               if (!msg) {
                   return;
@@ -589,21 +510,12 @@ module.exports = function (RED) {
             });
           },
         });
-
         node.on('input', function (msg) {
           if (msg.topic !== undefined && msg.payload !== undefined) {
             this.context().set(msg.topic, msg.payload);
           }
         });
-
         node.on('close', function () {
-          // if (finScript) {
-          //   try {
-          //     finScript.runInContext(context, finOpt);
-          //   } catch (err) {
-          //     node.error(err);
-          //   }
-          // }
           while (node.outstandingTimers.length > 0) {
             clearTimeout(node.outstandingTimers.pop());
           }
@@ -622,7 +534,6 @@ module.exports = function (RED) {
       }
     });
   }
-
   RED.nodes.registerType('ui_output', OutletNode, {
     dynamicModuleList: 'libs',
     settings: {
@@ -633,10 +544,8 @@ module.exports = function (RED) {
     },
   });
   RED.library.register('functions');
-
-  const uipath = RED.settings.ui.path || 'ui';
+  const uipath = ((RED.settings.ui || {}).path) || 'ui';
   const libPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
-
   RED.httpNode.get(libPath, function (req, res) {
     const options = {
       root: `${__dirname}/lib/`,

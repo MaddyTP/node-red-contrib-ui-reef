@@ -1,5 +1,4 @@
 const path = require('path');
-
 module.exports = function (RED) {
   function checkConfig(node, conf) {
     if (!conf || !conf.hasOwnProperty('group')) {
@@ -8,7 +7,6 @@ module.exports = function (RED) {
     }
     return true;
   }
-
   function HTML(config) {
     config.id = config.id.replace('.', '_');
     const configAsJson = JSON.stringify(config);
@@ -29,7 +27,6 @@ module.exports = function (RED) {
        `;
     return html;
   }
-
   let ui;
   function ProbeNode(config) {
     this.decimal = Number(config.decimal);
@@ -51,7 +48,6 @@ module.exports = function (RED) {
           config.widgetColor = ui.getTheme()['widget-backgroundColor'].value;
         }
         RED.nodes.createNode(this, config);
-
         const html = HTML(config);
         const ui_done = ui.addWidget({
           node,
@@ -198,7 +194,6 @@ module.exports = function (RED) {
                 },
               });
             };
-
             $scope.$watch('msg.payload', function (newValue) {
               if (newValue) {
                 $scope.latestValue = newValue.value;
@@ -208,7 +203,6 @@ module.exports = function (RED) {
             });
           },
         });
-
         node.on('close', function () {
           ui_done();
         });
@@ -218,11 +212,9 @@ module.exports = function (RED) {
     }
   }
   RED.nodes.registerType('ui_probe', ProbeNode);
-
-  const uipath = RED.settings.ui.path || 'ui';
+  const uipath = ((RED.settings.ui || {}).path) || 'ui';
   const libPath = path.join(RED.settings.httpNodeRoot, uipath, '/lib/*').replace(/\\/g, '/');
   const depPath = path.join(RED.settings.httpNodeRoot, uipath, '/dep/*').replace(/\\/g, '/');
-
   RED.httpNode.get(libPath, function (req, res) {
     const options = {
       root: `${__dirname}/lib/`,
@@ -230,7 +222,6 @@ module.exports = function (RED) {
     };
     res.sendFile(req.params[0], options);
   });
-
   RED.httpNode.get(depPath, function (req, res) {
     const options = {
       root: `${__dirname}/node_modules/`,
