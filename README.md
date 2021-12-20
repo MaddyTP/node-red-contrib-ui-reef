@@ -12,7 +12,7 @@ This set of Node-Red nodes are inteded to be used to create an interactive dashb
 Either use the Manage Palette option in the Node-RED Editor menu, or run the following command in your Node-RED user directory - typically `~/.node-red`
 
 ```javascript
-npm install --unsafe-perm node-red-contrib-ui-reef
+npm install node-red-contrib-ui-reef
 ```
 
 ## Probe
@@ -58,6 +58,6 @@ Input node is a modified fork of [node-red-contrib-ui-multistate-switch](https:/
 
 These nodes would not be possible without the work of the following:
 
-* @barbutenaers / @hotNipi - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
+* [barbutenaers](https://github.com/barbutenaers) / [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
 * Node-Red Team - Function node
 * Node-Red-Dashboard Team - Chart node
