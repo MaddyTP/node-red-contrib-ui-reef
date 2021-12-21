@@ -2,8 +2,7 @@
 
 [![platform](https://img.shields.io/badge/platform-Node--RED-red)](https://nodered.org)
 
-
-This set of Node-Red nodes are inteded to be used to create an interactive dashboard for reef and freshwater aquarium controllers.  Node-Red-Dashboard (min v2.10.0) is required and must be installed first.
+These nodes were designed to facilitate the creation of a Node-RED aquarium or hydroponics controller.  Node-Red-Dashboard (min v2.10.0) is required and must be installed first.
 
 ![image](https://user-images.githubusercontent.com/45469378/146694931-4b29cefe-bff7-48d8-b2ff-3cca6dedfff5.png)
 
@@ -44,20 +43,19 @@ Value on the right will show most recent datapoint whether that be live data or 
 
 Output node is a highly modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) and the Node-Red Function node.  In essence, it provides a switch option to run a function on interval instead of on incoming `msg`.  Function runs initially when the switch is set to the function option then repeats on the specified interval.  Changing switch position to any other option will cancel the interval and send static value associated with selected option.  
 
-![image](https://user-images.githubusercontent.com/45469378/146826377-84ab1d40-96f7-4ed5-b507-7e0d9cecb6ee.png)
-
-If `msg.toFront` exists in an output message the value will be sent to the front to be displayed in the upper-right hand of widget.  Switch states will be restored on restart or reboot if Node-RED settings specify "localfilesystem" as store. Color option allows specific colors to be set for different switch positions.
+If `toFront` property is set in function the value will be sent to the front to be displayed in the upper-right hand of widget.  Switch states will be restored on restart or reboot if Node-RED settings specify "localfilesystem" as store. Color option allows specific colors to be set for different switch positions.
 
 ## Input
 
 ![image](https://user-images.githubusercontent.com/45469378/146695082-7d691a09-d58b-4a04-9737-af2f5fafc4c8.png)
 
-Input node is a modified fork of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) which sets switch based on input value.  Color option allows specific colors to be set for different switch positions. 
+Input node is a modification of [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch) which sets switch based on input value.  Color option allows specific colors to be set for different switch positions. 
 
 ## Important Note
 
 These nodes would not be possible without the work of the following:
 
-* [barbutenaers](https://github.com/barbutenaers) / [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
+* [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
 * Node-Red Team - Function node
 * Node-Red-Dashboard Team - Chart node
+* Chart.js - [Github](https://github.com/chartjs/Chart.js)
