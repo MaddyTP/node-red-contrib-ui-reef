@@ -50,7 +50,7 @@ Function runs initially when the switch is set to the function option then repea
 
 ![image](https://user-images.githubusercontent.com/45469378/146826377-84ab1d40-96f7-4ed5-b507-7e0d9cecb6ee.png)
 
-Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.  The "Restore" option will load switch state from context on Node-red restart if Node-red context settings specify "localfilestorage".  
+Incoming messages which have a valid `topic` and `payload` will be stored in the node's context for use in the function.  If `msg.toFront` exists in an input or output message the value will be sent to the front to be displayed in the upper-right hand of widget.  Switch states will be restored on restart or reboot if Node-RED settings specify "localfilesystem" as store.
 
 ## Input
 

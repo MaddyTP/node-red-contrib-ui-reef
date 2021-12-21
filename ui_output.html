@@ -468,7 +468,7 @@ The **On Interval** tab contains code that will run repeatedely on the specified
           const valueField = $('<input/>', { class: 'node-input-option-value', type: 'text' }).css({ width: '40%', 'margin-left': '5px', 'margin-right': '5px' }).appendTo(row);
           valueField.typedInput({
             types: ['str', 'num', 'bool', {
-              value: 'func', label: 'function', icon: 'fa fa-code', hasValue: true,
+              value: 'func', label: 'function', icon: 'fa fa-code', hasValue: false,
             }],
           });
           valueField.typedInput('type', option.valueType || 'str');

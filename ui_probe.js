@@ -79,7 +79,8 @@ module.exports = function (RED) {
               let flag = false;
               if (value.length === 0) {
                 value = [];
-              } else if (value[0].hasOwnProperty('x') && value[0].hasOwnProperty('y')) {
+              }
+              if (value[0].hasOwnProperty('x') && value[0].hasOwnProperty('y')) {
                 for (let dd = 0; dd < value.length; dd += 1) {
                   if (Number.isNaN(value[dd].y)) {
                     flag = true;

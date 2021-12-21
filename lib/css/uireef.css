@@ -164,7 +164,7 @@
     width: 75px;
 }
 .probe-name{
-    line-height: 30px;
+    line-height: 28px;
     letter-spacing: .1em;
     font-size: 15px;
     font-weight: 500;
@@ -174,8 +174,8 @@
 }
 .probe-value{
     position: relative;
-    font-size: 30px;
-    font-weight: 330;
+    font-size: 24px;
+    font-weight: 400;
     color: var(--nr-dashboard-widgetColor);
     text-align: center;
 }

@@ -385,7 +385,6 @@ module.exports = function (RED) {
             const newMsg = {};
             if (msg.toFront) { newMsg.toFront = msg.toFront; }
             newMsg.socketid = msg.socketid;
-            newMsg.payload = value;
             return { msg: newMsg };
           },
           beforeSend: function (msg, orig) {
@@ -486,12 +485,13 @@ module.exports = function (RED) {
             }
             $scope.$watch('msg', function (msg) {
               if (!msg) {
-                  return;
+                return;
               }
-              if (msg.hasOwnProperty('toFront')) {
+              if (msg.toFront) {
                 $scope.inputState = msg.toFront.toString();
               }
               if (msg._replay) {
+                console.log(msg);
                 switchStateChanged(msg.payload, false);
               }
             });
