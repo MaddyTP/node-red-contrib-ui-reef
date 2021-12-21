@@ -7,18 +7,18 @@
         <label for="node-input-group"><i class="fa fa-table"></i> Group</span></label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-group"></div>
     </div>
+    <div class="form-row">
+        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
+    </div>
     <div class="form-row" id="template-row-size">
         <label><i class="fa fa-object-group"></i> Size</span></label>
         <input type="hidden" id="node-input-width">
         <input type="hidden" id="node-input-height">
         <button class="editor-button" id="node-input-size"></button>
     </div>
-    <div class="form-row">
-        <label for="node-input-label"><i class="fa fa-i-cursor"></i> Label</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-label"></div>
-    </div>
     <div class="form-row" id="x-axis-show">
-        <label for="node-input-removeOlder">Timeframe</label>
+        <label for="node-input-removeOlder"><i class="fa fa-clock-o"></i>Timeframe</label>
         <input type="text" id="node-input-removeOlder" style="width:50px;">
         <select id="node-input-removeOlderUnit" style="width:100px;">
             <option value="1">Seconds</option>
@@ -29,7 +29,7 @@
         </select>
     </div>
     <div class="form-row" id="x-axis-show">
-        <label for="node-input-decimal">Rounding</label>
+        <label for="node-input-decimal"><i class="fa fa-ellipsis-h"></i> Rounding</label>
         <input type="text" id="node-input-decimal" style="width:50px;">
     </div>
     <div class="form-row">
@@ -52,8 +52,24 @@
         &nbsp;&nbsp;To: <input type="text" id="node-input-maxout" style="width:100px;"/>
     </div>
 </script>
-<script type="text/html" data-help-name="ui_probe">
-    <p>A UI node to display probe value in the Node-RED dashboard.</p>
+<script type="text/markdown" data-help-name="ui_probe">
+UI widget to display value(s) of probe.
+
+### Inputs
+
+: payload (number | array) :  value must be a number or array of objects containing `x` and `y` properties. `x` can be timestamp or datatime, `y` must be a number.
+
+### Outputs
+
+All properties pass through from input.  `msg.payload` will be modified if rounding or map to range is selected.
+
+### Details
+
+Displays input values in both a chart and most recent value.  If specified, symbol will only be appened to displayed value.
+
+### References
+
+  - [GitHub](https://github.com/MaddyTP/node-red-contrib-ui-reef)
 </script>
 <script type="text/javascript">
 RED.nodes.registerType('ui_probe', {

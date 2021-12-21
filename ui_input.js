@@ -1,5 +1,4 @@
 const path = require('path');
-
 module.exports = function (RED) {
   function HTML(config) {
     config.id = config.id.replace('.', '_');

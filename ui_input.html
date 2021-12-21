@@ -18,13 +18,13 @@
         <button class="editor-button" id="node-input-size"></button>
     </div>
     <div class="form-row">
+        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> Input</label>
+        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-stateField"></div>
+    </div>
+    <div class="form-row">
         <label for='node-input-useThemeColors'><i class='fa fa-paint-brush'></i> Colors</label>
         <input type='checkbox' id='node-input-useThemeColors' style='width: auto; border: none; vertical-align: baseline;'>
         <span for='node-input-useThemeColors' style="padding-left: 5px;">Use theme colors?</span>
-    </div>
-    <div class="form-row">
-        <label for="node-input-stateField"><i class="fa fa-toggle-off"></i> Input</label>
-        <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-stateField"></div>
     </div>
     <div class="form-row" style="margin-bottom:0;">
         <label style="width: 100px"><i class="fa fa-list"></i> Options:</label>
@@ -34,10 +34,21 @@
         <ol id="node-input-opts-container"></ol>
     </div>
 </script>
-<script type="text/html" data-help-name="ui_input">
-    <p>A UI node to show a switch state in the Node-RED dashboard.</p>
-</script>
+<script type="text/markdown" data-help-name="ui_input">
+Displays a switch state based on input.
 
+### Inputs
+
+: payload (string | number | boolean) :  the value of switch state to be displayed.
+
+### Details
+
+Value of `msg.payload` is used to set the switch state on input.
+
+### References
+
+  - [GitHub](https://github.com/MaddyTP/node-red-contrib-ui-reef)
+</script>
 <script type="text/javascript">
 RED.nodes.registerType('ui_input', {
   category: 'UI Reef',
@@ -92,7 +103,7 @@ RED.nodes.registerType('ui_input', {
       }
       return colors[idx];
     }
-    const optionsList = $('#node-input-opts-container').css('min-height', '165px').editableList({
+    const optionsList = $('#node-input-opts-container').css('min-height', '200px').editableList({
       header: $('<div>').append($.parseHTML(
         "<div style='width:40%; display: inline-grid'><b>Label</b></div>"
                 + "<div style='width:40%; display: inline-grid'><b>Value</b></div>"
@@ -157,10 +168,10 @@ RED.nodes.registerType('ui_input', {
       });
       const un = new Set(this.options.map(function (o) { return o.value; }));
       if (this.options.length !== un.size) {
-        $('#configError').text('Values must be unique');
+        $('#configError').text('Values must be unique!');
         $('#configError').show();
       } else if (this.options.length < 2) {
-        $('#configError').text('Configure at least two options');
+        $('#configError').text('Configure at least two options!');
         $('#configError').show();
       } else {
         $('#configError').hide();

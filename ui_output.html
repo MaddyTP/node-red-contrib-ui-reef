@@ -56,8 +56,6 @@
     </style>
     <input type="hidden" id="node-input-func">
     <input type="hidden" id="node-input-noerr">
-    <input type="hidden" id="node-input-finalize">
-    <input type="hidden" id="node-input-initialize">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <div style="display: inline-block; width: calc(100% - 105px)"><input type="text" id="node-input-name"></div>
@@ -86,11 +84,6 @@
                 <input type="text" id="node-input-topic">
             </div>
             <div class="form-row">
-                <label for="node-input-storestate"><i class='fa fa-history'></i> Restore</label>
-                <input type="checkbox" id="node-input-storestate" style='width: auto; border: none; vertical-align: baseline;'>
-                <span for='node-input-storestate' style="padding-left: 5px;">Load initial state from context?</span>
-            </div>
-            <div class="form-row">
                 <label for='node-input-useThemeColors'><i class='fa fa-paint-brush'></i> Colors</label>
                 <input type='checkbox' id='node-input-useThemeColors' style='width: auto; border: none; vertical-align: baseline;'>
                 <span for='node-input-useThemeColors' style="padding-left: 5px;">Use theme colors?</span>
@@ -111,10 +104,6 @@
         </div>
         <div id="func-tab-body" style="display:none">
             <div class="form-row">
-                <label for="node-input-outputs" style="width: 100px"><i class="fa fa-random"></i> Outputs:</label>
-                <input id="node-input-outputs" style="width: 50px;" value="1">
-            </div>
-            <div class="form-row">
                 <label for="inject-time-interval-count" style="width: 100px"><i class="fa fa-repeat"></i> Interval:</label>
                 <input id="inject-time-interval-count" style="width: 50px;" value="5">
                 <select id="node-input-repeatUnit" style="width:120px;">
@@ -128,11 +117,38 @@
                 <div style="height: 100px; min-height:100px;" class="node-text-editor" id="node-input-func-editor" ></div>
                 <div style="position: absolute; right:0; bottom: calc(100% - 20px); z-Index: 5;"><button id="node-function-expand-js" class="red-ui-button red-ui-button-small"><i class="fa fa-expand"></i></button></div>
             </div>
+            <div class="form-row">
+                <label for="node-input-outputs" style="width: 100px"><i class="fa fa-random"></i> Outputs:</label>
+                <input id="node-input-outputs" style="width: 50px;" value="1">
+            </div>
         </div>
     </div>
 </script>
-<script type="text/html" data-help-name="ui_output">
-    <p>A UI node to show a switch with multiple states in the Node-RED dashboard.</p>
+<script type="text/markdown" data-help-name="ui_output">
+A UI switch with ability to run a function on interval.
+
+### Inputs
+
+: topic (string) : name of the value to be stored in context for use in function.
+: payload (any) :  value to be stored in context for use in function.
+: toFront (string | number) : value to be sent to widget.
+
+### Outputs
+
+#### **Static output:**
+: topic (string) : if specified in setup.
+: payload (string | number | boolean) : value of selected switch option.
+
+#### **Function output:**
+Returns a message object (or multiple message objects) repeated on the specified interval.
+
+### Details
+
+The **On Interval** tab contains code that will run repeatedely on the specified interval when switch state is set to function type.
+
+### References
+
+  - [GitHub](https://github.com/MaddyTP/node-red-contrib-ui-reef)
 </script>
 <script type="text/javascript">
 (function () {
@@ -244,7 +260,7 @@
         const fmoduleSpan = $('<span>').appendTo(row0);
         const fmodule = $('<input/>', {
           class: 'node-input-libs-val',
-          placeholder: RED._('node-red:function.require.module'),
+          placeholder: 'module',
           type: 'text',
         }).css({
         }).appendTo(fmoduleSpan).typedInput({
@@ -336,10 +352,7 @@
         if (n === '_custom_') {
           n = item.find('.node-input-libs-val').val();
         }
-        if ((!v || (v === ''))
-                    || (!n || (n === ''))) {
-          return;
-        }
+        if ((!v || (v === '')) || (!n || (n === ''))) { return; }
         _libs.push({
           var: v,
           module: n,
@@ -377,7 +390,6 @@
           return v.length === unique.size && v.length > 1;
         },
       },
-      storestate: { value: false },
       topic: { value: '' },
       func: { value: '\nreturn;' },
       outputs: { value: 1 },
@@ -388,8 +400,6 @@
           return !v;
         },
       },
-      initialize: { value: '' },
-      finalize: { value: '' },
       libs: {
         value: [],
         validate(v) {
@@ -458,12 +468,13 @@
           const valueField = $('<input/>', { class: 'node-input-option-value', type: 'text' }).css({ width: '40%', 'margin-left': '5px', 'margin-right': '5px' }).appendTo(row);
           valueField.typedInput({
             types: ['str', 'num', 'bool', {
-              value: 'func', label: 'function', icon: 'fa fa-code', hasValue: false,
+              value: 'func', label: 'function', icon: 'fa fa-code', hasValue: true,
             }],
           });
           valueField.typedInput('type', option.valueType || 'str');
           valueField.typedInput('value', option.value || `option_${i}`);
-          valueField.on('change', function (type, value) {
+          valueField.on('change', function (event, type, value) {
+            if(type === 'func' && value !== 'func'){ valueField.typedInput('value', 'func'); }
             validate();
           });
           const colofield = $('#node-input-useThemeColors').prop('checked') ? 'none' : 'inline-block';
@@ -566,7 +577,7 @@
         url: 'functions',
         type: 'function',
         editor: this.editor,
-        mode: 'ace/mode/nrjavascript',
+        mode: 'ace/mode/javascript',
         fields: [
           'name', 'outputs',
           {
@@ -645,8 +656,7 @@
         const option = $(this);
         const label = option.find('.node-input-option-label').val();
         const valueType = option.find('.node-input-option-value').typedInput('type');
-        let value = option.find('.node-input-option-value').typedInput('value');
-        if (valueType === 'func') { value = 'func'; }
+        const value = option.find('.node-input-option-value').typedInput('value');
         const color = option.find('.node-input-option-color').val();
         node.options.push({
           label, value, valueType, color,

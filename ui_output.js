@@ -1,7 +1,6 @@
 const util = require('util');
 const vm = require('vm');
 const path = require('path');
-
 module.exports = function (RED) {
   function HTML(config) {
     delete config.func;
@@ -54,7 +53,6 @@ module.exports = function (RED) {
               msg._msgid = RED.util.generateId();
               if(msg.hasOwnProperty('toFront')){ 
                 node.emit('input', { toFront: msg.toFront });
-                delete msg.toFront;
               }
               msgCount += 1;
             } else {
@@ -62,7 +60,7 @@ module.exports = function (RED) {
               if (type === 'object') {
                 type = Buffer.isBuffer(msg) ? 'Buffer' : (util.isArray(msg) ? 'Array' : 'Date');
               }
-              node.error(RED._('function.error.non-message-returned', { type }));
+              node.error(RED._('node-red:function.error.non-message-returned', { type }));
             }
           }
         }
@@ -74,7 +72,7 @@ module.exports = function (RED) {
   }
   function createVMOpt(node, kind) {
     const opt = {
-      filename: 'Function node' + kind + ':' + node.id + (node.name ? ' [' + node.name + ']' : ''),
+      filename: 'uiOutput node' + kind + ':' + node.id + (node.name ? ' [' + node.name + ']' : ''),
       displayErrors: true,
     };
     return opt;
@@ -86,12 +84,6 @@ module.exports = function (RED) {
       if (m) {
         const line = parseInt(m[3], 10) - 1;
         let kind = 'body:';
-        if (/setup/.exec(m[1])) {
-          kind = 'setup:';
-        }
-        if (/cleanup/.exec(m[1])) {
-          kind = 'cleanup:';
-        }
         err.message += ' (' + kind + 'line ' + line + ')';
       }
     }
@@ -105,11 +97,9 @@ module.exports = function (RED) {
     node.topic = config.topic;
     node.func = config.func;
     node.outputs = config.outputs;
-    node.ini = config.initialize ? config.initialize.trim() : '';
-    node.fin = config.finalize ? config.finalize.trim() : '';
     node.libs = config.libs || [];
     if (RED.settings.functionExternalModules === false && node.libs.length > 0) {
-      throw new Error(RED._('function.error.externalModuleNotAllowed'));
+      throw new Error(RED._('node-red:function.error.externalModuleNotAllowed'));
     }
     const functionText = 'var results = null;'
             + 'results = (async function(){ '
@@ -163,7 +153,7 @@ module.exports = function (RED) {
         },
         on: function (...args) {
           if (args[0] === 'input') {
-            throw new Error(RED._('function.error.inputListener'));
+            throw new Error(RED._('node-red:function.error.inputListener'));
           }
           node.on(...args);
         },
@@ -264,7 +254,7 @@ module.exports = function (RED) {
         const vname = module.hasOwnProperty('var') ? module.var : null;
         if (vname && (vname !== '')) {
           if (sandbox.hasOwnProperty(vname) || vname === 'node') {
-            node.error(RED._('function.error.moduleNameError', { name: vname }));
+            node.error(RED._('node-red:function.error.moduleNameError', { name: vname }));
             moduleErrors = true;
             return;
           }
@@ -274,14 +264,14 @@ module.exports = function (RED) {
             moduleLoadPromises.push(RED.import(module.module).then(function (lib) {
               sandbox[vname] = lib.default;
             }).catch(function (err) {
-              node.error(RED._('function.error.moduleLoadError', { module: module.spec, error: err.toString() }));
+              node.error(RED._('node-red:function.error.moduleLoadError', { module: module.spec, error: err.toString() }));
               throw err;
             }));
           }
         }
       });
       if (moduleErrors) {
-        throw new Error(RED._('function.error.externalModuleLoadError'));
+        throw new Error(RED._('node-red:function.error.externalModuleLoadError'));
       }
     }
     let ui;
@@ -355,10 +345,7 @@ module.exports = function (RED) {
             sendResults(node, msg);
           }, 5000);
         };
-        if (config.storestate) {
-          config.initOpt = node.context().get('state');
-        }
-        if (config.initOpt === undefined) { config.initOpt = config.options[0]; }
+        config.initOpt = node.context().get('state') || config.options[0];
         switch (config.initOpt.valueType) {
           case ('str'):
             node.sendInitial(config.initOpt.value);
@@ -404,7 +391,7 @@ module.exports = function (RED) {
           beforeSend: function (msg, orig) {
             if (orig) {
               const newMsg = {};
-              if (config.storestate) { node.context().set('state', orig.msg.option); }
+              node.context().set('state', orig.msg.option);
               if (orig.msg.option.valueType === 'func') {
                 node.repeaterSetup();
                 orig._dontSend = true;
@@ -534,16 +521,7 @@ module.exports = function (RED) {
       }
     });
   }
-  RED.nodes.registerType('ui_output', OutletNode, {
-    dynamicModuleList: 'libs',
-    settings: {
-      functionExternalModules: {
-        value: true,
-        exportable: true,
-      },
-    },
-  });
-  RED.library.register('functions');
+  RED.nodes.registerType('ui_output', OutletNode);
   const uipath = ((RED.settings.ui || {}).path) || 'ui';
   const libPath = path.join(RED.settings.httpNodeRoot, uipath, '/ui-reef/*').replace(/\\/g, '/');
   RED.httpNode.get(libPath, function (req, res) {
