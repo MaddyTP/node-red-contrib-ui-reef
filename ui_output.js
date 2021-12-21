@@ -35,7 +35,7 @@ module.exports = function (RED) {
       `;
     return html;
   }
-  function sendResults(node, msgs) {
+  function sendResults(node, msgs, state) {
     if (msgs == null) { return; }
     if (!util.isArray(msgs)) {
       msgs = [msgs];
@@ -51,8 +51,12 @@ module.exports = function (RED) {
           if (msg !== null && msg !== undefined) {
             if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !util.isArray(msg)) {
               msg._msgid = RED.util.generateId();
+              msg.state = state;
               if(msg.hasOwnProperty('toFront')){ 
-                node.emit('input', { toFront: msg.toFront });
+                node.emit('input', { 
+                  toFront: msg.toFront,
+                  state: state,
+                });
               }
               msgCount += 1;
             } else {
@@ -91,6 +95,7 @@ module.exports = function (RED) {
   function OutletNode(config) {
     this.interval_id = null;
     this.repeat = config.repeat * parseInt(config.repeatUnit);
+    this.state;
     const node = this;
     node.name = config.name;
     node.label = config.label;
@@ -288,11 +293,11 @@ module.exports = function (RED) {
         }
         node.script = vm.createScript(functionText, createVMOpt(node, ''));
         RED.nodes.createNode(node, config);
-        node.repeater = function () {
+        node.repeater = function (state) {
           const start = process.hrtime();
           node.script.runInContext(context);
           context.results.then(function (results) {
-            sendResults(node, results);
+            sendResults(node, results, state);
             const duration = process.hrtime(start);
             const converted = Math.floor((duration[0] * 1e9 + duration[1]) / 10000) / 100;
             node.metric('duration', converted);
@@ -324,11 +329,11 @@ module.exports = function (RED) {
             }
           });
         };
-        node.repeaterSetup = function () {
+        node.repeaterSetup = function (state) {
           if (this.repeat && !Number.isNaN(this.repeat) && this.interval_id === null) {
-            node.repeater();
+            node.repeater(state);
             this.interval_id = setInterval(function () {
-              node.repeater();
+              node.repeater(state);
             }, this.repeat);
             node.outstandingIntervals.push(this.interval_id);
           }
@@ -378,27 +383,28 @@ module.exports = function (RED) {
           emitOnlyNewValues: false,
           forwardInputMessages: false,
           storeFrontEndInputAsState: true,
+          persistantFrontEndValue: true,
           convertBack: function (value) {
             return value;
           },
           beforeEmit: function (msg, value) {
             const newMsg = {};
             if (msg.toFront) { newMsg.toFront = msg.toFront; }
+            newMsg.state = msg.state;
             newMsg.socketid = msg.socketid;
             return { msg: newMsg };
           },
           beforeSend: function (msg, orig) {
             if (orig) {
               const newMsg = {};
-              node.context().set('state', orig.msg.option);
-              if (orig.msg.option.valueType === 'func') {
-                node.repeaterSetup();
+              newMsg.payload = orig.msg.payload;
+              if (orig.msg.state.valueType === 'func') {
+                node.repeaterSetup(orig.msg.state);
                 orig._dontSend = true;
               } else {
                 node.cancelRepeater();
                 if (config.topic !== '') { newMsg.topic = config.topic; }
               }
-              newMsg.payload = orig.msg.payload;
               return newMsg;
             }
           },
@@ -456,7 +462,7 @@ module.exports = function (RED) {
               });
               if (divIndex >= 0) {
                 let percentage = '0%';
-                $scope.inputState = $scope.config.options[divIndex].label;
+                //$scope.inputState = $scope.config.options[divIndex].label;
                 if ($scope.config.options.length > 0 && divIndex >= 0) {
                   percentage = (100 / $scope.config.options.length) * divIndex;
                   $scope.sliderDivElement.style.left = `${percentage}%`;
@@ -477,8 +483,8 @@ module.exports = function (RED) {
                 if (sendMsg) {
                   $scope.send({
                     payload: newValue,
-                    option: $scope.config.options[divIndex],
-                    _replay: true,
+                    state: $scope.config.options[divIndex],
+                    toFront: newValue,
                   });
                 }
               }
@@ -487,21 +493,18 @@ module.exports = function (RED) {
               if (!msg) {
                 return;
               }
-              if (msg.toFront) {
+              if (msg.hasOwnProperty('toFront')) {
                 $scope.inputState = msg.toFront.toString();
               }
-              if (msg._replay) {
-                console.log(msg);
-                switchStateChanged(msg.payload, false);
-              }
+              switchStateChanged(msg.state.value, false);
             });
           },
         });
-        node.on('input', function (msg) {
-          if (msg.topic !== undefined && msg.payload !== undefined) {
-            this.context().set(msg.topic, msg.payload);
-          }
-        });
+        // node.on('input', function (msg) {
+        //   if (msg.topic !== undefined && msg.payload !== undefined) {
+        //     this.context().set(msg.topic, msg.payload);
+        //   }
+        // });
         node.on('close', function () {
           while (node.outstandingTimers.length > 0) {
             clearTimeout(node.outstandingTimers.pop());

@@ -127,20 +127,15 @@
 <script type="text/markdown" data-help-name="ui_output">
 A UI switch with ability to run a function on interval.
 
-### Inputs
-
-: topic (string) : name of the value to be stored in context for use in function.
-: payload (any) :  value to be stored in context for use in function.
-: toFront (string | number) : value to be sent to widget.
-
 ### Outputs
 
 #### **Static output:**
 : topic (string) : if specified in setup.
 : payload (string | number | boolean) : value of selected switch option.
+: state (object) : values of selected switch option.
 
 #### **Function output:**
-Returns a message object (or multiple message objects) repeated on the specified interval.
+: state (object) : values of selected switch option. Appended to all messages. Expected to return a message object (or multiple message objects) repeated on the specified interval.
 
 ### Details
 
@@ -433,7 +428,7 @@ The **On Interval** tab contains code that will run repeatedely on the specified
         required: true,
       },
     },
-    inputs: 1,
+    inputs: 0,
     outputs: 1,
     icon: 'ui_switch.png',
     align: 'left',

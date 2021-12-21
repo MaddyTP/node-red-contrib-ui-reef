@@ -1,0 +1,197 @@
+[
+    {
+        "id": "491efa7527b4d5d6",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "efb4a4c8f18e062c",
+        "type": "ui_probe",
+        "z": "491efa7527b4d5d6",
+        "name": "",
+        "group": "34e1fd765c3c858a",
+        "order": 1,
+        "width": 6,
+        "height": 2,
+        "label": "probe",
+        "removeOlder": "30",
+        "removeOlderUnit": "1",
+        "decimal": "0",
+        "symbol": "%",
+        "scale": true,
+        "minin": "0",
+        "maxin": "1",
+        "minout": "0",
+        "maxout": "100",
+        "x": 630,
+        "y": 120,
+        "wires": [
+            [
+                "a9b8e4e37b87b754"
+            ]
+        ]
+    },
+    {
+        "id": "91e97dcb83bd65fa",
+        "type": "inject",
+        "z": "491efa7527b4d5d6",
+        "name": "Send random values",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "2",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "example",
+        "payload": "0",
+        "payloadType": "num",
+        "x": 200,
+        "y": 120,
+        "wires": [
+            [
+                "67c6fcf30ea0ff61"
+            ]
+        ]
+    },
+    {
+        "id": "67c6fcf30ea0ff61",
+        "type": "function",
+        "z": "491efa7527b4d5d6",
+        "name": "Random Values",
+        "func": "msg.payload = Math.random();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 120,
+        "wires": [
+            [
+                "efb4a4c8f18e062c"
+            ]
+        ]
+    },
+    {
+        "id": "8e87f6cc9574c5f6",
+        "type": "ui_input",
+        "z": "491efa7527b4d5d6",
+        "name": "",
+        "group": "34e1fd765c3c858a",
+        "order": 3,
+        "width": 6,
+        "height": 1,
+        "label": "input",
+        "stateField": "payload",
+        "useThemeColors": true,
+        "options": [
+            {
+                "label": "OFF",
+                "value": "false",
+                "valueType": "bool",
+                "color": "#009933"
+            },
+            {
+                "label": "ON",
+                "value": "true",
+                "valueType": "bool",
+                "color": "#999999"
+            }
+        ],
+        "x": 290,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "886344b627323a7f",
+        "type": "ui_output",
+        "z": "491efa7527b4d5d6",
+        "name": "",
+        "group": "34e1fd765c3c858a",
+        "order": 2,
+        "width": 6,
+        "height": 1,
+        "label": "output",
+        "useThemeColors": true,
+        "options": [
+            {
+                "label": "OFF",
+                "value": "false",
+                "valueType": "bool",
+                "color": "#009933"
+            },
+            {
+                "label": "AUTO",
+                "value": "func",
+                "valueType": "func",
+                "color": "#999999"
+            },
+            {
+                "label": "ON",
+                "value": "true",
+                "valueType": "bool",
+                "color": "#ff6666"
+            }
+        ],
+        "topic": "",
+        "func": "var probe = flow.get('probe');\nvar msg = {};\n\nif (probe > 50) {\n   msg.payload = false;\n   msg.toFront = 'OFF'\n} else {\n    msg.payload = true;\n    msg.toFront = 'ON'\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "libs": [],
+        "repeat": "1",
+        "repeatUnit": "1000",
+        "x": 130,
+        "y": 200,
+        "wires": [
+            [
+                "8e87f6cc9574c5f6"
+            ]
+        ]
+    },
+    {
+        "id": "a9b8e4e37b87b754",
+        "type": "function",
+        "z": "491efa7527b4d5d6",
+        "name": "Store value in flow context",
+        "func": "flow.set('probe', msg.payload);\nreturn;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "34e1fd765c3c858a",
+        "type": "ui_group",
+        "name": "Group1",
+        "tab": "b0ed93e3e10cac43",
+        "order": 1,
+        "disp": false,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "b0ed93e3e10cac43",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
