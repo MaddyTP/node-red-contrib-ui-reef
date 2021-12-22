@@ -55,9 +55,7 @@ Input node is a modification of [node-red-contrib-ui-multistate-switch](https://
 
 These nodes would not be possible without the following projects:
 
-* [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [Github](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
-* Node-Red Team - [Github](https://github.com/node-red/node-red)
-* Node-Red-Dashboard - [Github](https://github.com/node-red/node-red-dashboard)
-* ChartJS - [Github](https://github.com/chartjs/Chart.js)
-* chartjs-adapter-moment - [Github](https://github.com/chartjs/chartjs-adapter-moment)
-* Moment - [Github](https://github.com/moment/moment/)
+* [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
+* Node-Red Team - [Node-RED](https://github.com/node-red/node-red)
+* Node-Red Dashboard - [node-red-dashboard](https://github.com/node-red/node-red-dashboard)
+* ChartJS - [ChartJS](https://github.com/chartjs/Chart.js) and [chartjs-plugin-moment](https://github.com/chartjs/chartjs-adapter-moment)
