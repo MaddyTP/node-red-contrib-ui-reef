@@ -33,9 +33,9 @@ Stored data:
 ]
 ```
 
-When providing data for the time scale, this node uses timestamps defined as milliseconds since the epoch (midnight January 1, 1970, UTC) internally. However, it will also accept most datetime formats by way of the included chartjs-adapter-moment plugin.  
+When providing data for the time scale, this node uses timestamps defined as milliseconds since the epoch (midnight January 1, 1970, UTC) internally. However, it will also accept most datetime formats by way of the included [chartjs-adapter-moment](https://github.com/chartjs/chartjs-adapter-moment) plugin.  
 
-Value on the right will show most recent datapoint whether that be live data or stored data.  If a symbol is specified it will be appended to this value only.  Regardless of input data, the time component will be validated against the specified timeframe and older values dropped.  Additionally, there are options to round values to a decimal place and/or map value(s) to a range.
+Value on the right will show most recent datapoint whether that be live data or stored data.  If a symbol is specified it will be appended to this value only.  Regardless of input data, the time component will be validated against the configured timeframe and older values dropped.  Additionally, there are options to round values to a decimal place and/or map value(s) to a range.
 
 ## Output
 
@@ -53,9 +53,11 @@ Input node is a modification of [node-red-contrib-ui-multistate-switch](https://
 
 ## Important Note
 
-These nodes would not be possible without the work of the following:
+These nodes would not be possible without the following projects:
 
 * [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
 * Node-Red Team - Function node
 * Node-Red-Dashboard Team - Chart node
-* Chart.js - [Github](https://github.com/chartjs/Chart.js)
+* ChartJS - [Github](https://github.com/chartjs/Chart.js)
+* chartjs-adapter-moment - [Github](https://github.com/chartjs/chartjs-adapter-moment)
+* Moment - [Github](https://github.com/moment/moment/)
