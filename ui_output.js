@@ -462,7 +462,6 @@ module.exports = function (RED) {
               });
               if (divIndex >= 0) {
                 let percentage = '0%';
-                //$scope.inputState = $scope.config.options[divIndex].label;
                 if ($scope.config.options.length > 0 && divIndex >= 0) {
                   percentage = (100 / $scope.config.options.length) * divIndex;
                   $scope.sliderDivElement.style.left = `${percentage}%`;
@@ -500,11 +499,6 @@ module.exports = function (RED) {
             });
           },
         });
-        // node.on('input', function (msg) {
-        //   if (msg.topic !== undefined && msg.payload !== undefined) {
-        //     this.context().set(msg.topic, msg.payload);
-        //   }
-        // });
         node.on('close', function () {
           while (node.outstandingTimers.length > 0) {
             clearTimeout(node.outstandingTimers.pop());

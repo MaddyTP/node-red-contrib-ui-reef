@@ -2,7 +2,7 @@
 
 [![platform](https://img.shields.io/badge/platform-Node--RED-red)](https://nodered.org)
 
-These nodes were designed to facilitate the creation of a Node-RED aquarium or hydroponics controller.  Node-Red-Dashboard (min v2.10.0) is required and must be installed first.
+These nodes were designed to facilitate the creation of a Node-RED aquarium or hydroponics controller.  [node-red-dashboard](https://github.com/node-red/node-red-dashboard) (min v2.10.0) is required and must be installed first.
 
 ![image](https://user-images.githubusercontent.com/45469378/146694931-4b29cefe-bff7-48d8-b2ff-3cca6dedfff5.png)
 
@@ -55,9 +55,9 @@ Input node is a modification of [node-red-contrib-ui-multistate-switch](https://
 
 These nodes would not be possible without the following projects:
 
-* [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [node-red-contrib-ui-multistate-switch](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
-* Node-Red Team - Function node
-* Node-Red-Dashboard Team - Chart node
+* [barbutenaers](https://github.com/barbutenaers) and [hotnipi](https://github.com/hotNipi) - [Github](https://github.com/bartbutenaers/node-red-contrib-ui-multistate-switch)
+* Node-Red Team - [Github](https://github.com/node-red/node-red)
+* Node-Red-Dashboard - [Github](https://github.com/node-red/node-red-dashboard)
 * ChartJS - [Github](https://github.com/chartjs/Chart.js)
 * chartjs-adapter-moment - [Github](https://github.com/chartjs/chartjs-adapter-moment)
 * Moment - [Github](https://github.com/moment/moment/)
