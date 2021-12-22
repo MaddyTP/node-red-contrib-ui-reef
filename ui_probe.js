@@ -225,7 +225,7 @@ module.exports = function (RED) {
   });
   RED.httpNode.get(depPath, function (req, res) {
     const options = {
-      root: `${__dirname}/node_modules/`,
+      root: `${__dirname}/../`,
       dotfiles: 'deny',
     };
     res.sendFile(req.params[0], options);
