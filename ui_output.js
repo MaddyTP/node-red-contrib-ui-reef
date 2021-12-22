@@ -342,27 +342,27 @@ module.exports = function (RED) {
           clearInterval(this.interval_id);
           this.interval_id = null;
         };
-        node.sendInitial = function (val) {
+        node.sendInitial = function (val, state) {
           const msg = {};
           msg.payload = val;
           if (config.topic !== '') { msg.topic = config.topic; }
           setTimeout(function () {
-            sendResults(node, msg);
+            sendResults(node, msg, state);
           }, 5000);
         };
         config.initOpt = node.context().get('state') || config.options[0];
         switch (config.initOpt.valueType) {
           case ('str'):
-            node.sendInitial(config.initOpt.value);
+            node.sendInitial(config.initOpt.value, config.initOpt);
             break;
           case ('num'):
-            node.sendInitial(Number(config.initOpt.value));
+            node.sendInitial(Number(config.initOpt.value), config.initOpt);
             break;
           case ('bool'):
             if (config.initOpt.value === 'true') {
-              node.sendInitial(true);
+              node.sendInitial(true, config.initOpt);
             } else {
-              node.sendInitial(false);
+              node.sendInitial(false, config.initOpt);
             }
             break;
           case ('func'):
@@ -397,6 +397,7 @@ module.exports = function (RED) {
           beforeSend: function (msg, orig) {
             if (orig) {
               const newMsg = {};
+              node.context().set('state', orig.msg.state);
               newMsg.payload = orig.msg.payload;
               if (orig.msg.state.valueType === 'func') {
                 node.repeaterSetup(orig.msg.state);
