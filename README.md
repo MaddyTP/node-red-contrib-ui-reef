@@ -2,6 +2,9 @@
 
 [![platform](https://img.shields.io/badge/platform-Node--RED-red)](https://nodered.org)
 
+**ANNOUNCEMENT** - As of 30th November 2024 this project should be considered deprecated. I will leave it here until [node-red-dashboard](https://github.com/node-red/node-red-dashboard) is officially archived so it can still be installed. 
+This project has evolved to [@maddytp/node-red-dashboard-2-ui-reef](https://github.com/MaddyTP/node-red-dashboard-2-ui-reef) which runs on [Flowfuse Dashboard](https://github.com/FlowFuse/node-red-dashboard).
+
 These nodes were designed to facilitate the creation of a Node-RED aquarium or hydroponics controller.  [node-red-dashboard](https://github.com/node-red/node-red-dashboard) (min v2.10.0) is required and must be installed first.
 
 ![image](https://user-images.githubusercontent.com/45469378/146694931-4b29cefe-bff7-48d8-b2ff-3cca6dedfff5.png)
